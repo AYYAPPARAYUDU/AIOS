@@ -70,13 +70,17 @@ async def kill_process(req: ProcessKillRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.get("/actions/state")
+async def get_system_state():
+    return actions.get_state()
+
 @router.post("/actions/volume")
 async def set_system_volume(req: VolumeRequest):
     if req.mute is not None:
         return actions.mute_volume(req.mute)
     if req.level is not None:
         return actions.set_volume(req.level)
-    return {"status": "no_change"}
+    return actions.get_volume()
 
 @router.post("/actions/brightness")
 async def set_system_brightness(req: BrightnessRequest):

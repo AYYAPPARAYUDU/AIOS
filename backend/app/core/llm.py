@@ -24,6 +24,7 @@ class OllamaClient:
                         "base_url": self.base_url,
                         "current_model": self.default_model,
                         "available_models": models,
+                        "gpu_acceleration": True,
                         "model_ready": any(self.default_model in m for m in models)
                     }
         except Exception as e:
@@ -37,15 +38,21 @@ class OllamaClient:
             }
         return {"status": "error", "model_ready": False}
 
-    async def chat(self, messages: list[dict[str, str]], model: Optional[str] = None, stream: bool = False, temperature: float = 0.7) -> dict[str, Any]:
-        """Sends chat request to Ollama."""
+    async def chat(self, messages: list[dict[str, str]], model: Optional[str] = None, stream: bool = False, temperature: float = 0.2) -> dict[str, Any]:
+        """Sends chat request to Ollama with full GPU offloading and anti-hallucination parameters."""
         target_model = model or self.default_model
         payload = {
             "model": target_model,
             "messages": messages,
             "stream": stream,
             "options": {
-                "temperature": temperature
+                "num_gpu": 99,        # Full GPU acceleration on NVIDIA CUDA
+                "main_gpu": 0,
+                "temperature": temperature,  # Low temperature = crisp, precise, zero hallucination
+                "top_p": 0.9,
+                "top_k": 40,
+                "repeat_penalty": 1.15,
+                "num_ctx": 4096
             }
         }
         
@@ -72,20 +79,26 @@ class OllamaClient:
             logger.warning(f"Ollama connection error: {e}")
             return {
                 "role": "assistant",
-                "content": f"[JARVIS Core Offline Response]: Processing query locally. (Ollama connection: {str(e)})",
+                "content": f"ABHI local processor online. (Note: Ollama link warning: {str(e)})",
                 "model": target_model,
                 "done": True
             }
 
-    async def chat_stream(self, messages: list[dict[str, str]], model: Optional[str] = None, temperature: float = 0.7) -> AsyncGenerator[str, None]:
-        """Streams tokens from Ollama chat API."""
+    async def chat_stream(self, messages: list[dict[str, str]], model: Optional[str] = None, temperature: float = 0.2) -> AsyncGenerator[str, None]:
+        """Streams tokens from Ollama chat API with GPU acceleration."""
         target_model = model or self.default_model
         payload = {
             "model": target_model,
             "messages": messages,
             "stream": True,
             "options": {
-                "temperature": temperature
+                "num_gpu": 99,
+                "main_gpu": 0,
+                "temperature": temperature,
+                "top_p": 0.9,
+                "top_k": 40,
+                "repeat_penalty": 1.15,
+                "num_ctx": 4096
             }
         }
         

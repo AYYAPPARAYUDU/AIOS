@@ -1,11 +1,18 @@
 import os
 import subprocess
-import shutil
+import webbrowser
 from typing import Optional, Any
 from backend.app.storage.db import db
 
-# Common Windows application aliases and known absolute paths
+# Common Windows application aliases, URIs, and known absolute paths
 APP_PATHS: dict[str, list[str]] = {
+    "whatsapp": [
+        "whatsapp:",
+        "whatsapp.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\WhatsApp\WhatsApp.exe"),
+        os.path.expandvars(r"%ProgramFiles%\WindowsApps\WhatsApp*"),
+        "https://web.whatsapp.com"
+    ],
     "chrome": [
         "chrome", "google-chrome",
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -24,9 +31,25 @@ APP_PATHS: dict[str, list[str]] = {
     "terminal": ["wt.exe", "powershell.exe", "cmd.exe"],
     "powershell": ["powershell.exe"],
     "cmd": ["cmd.exe"],
+    "youtube": ["https://www.youtube.com"],
+    "github": ["https://github.com"],
+    "gmail": ["https://mail.google.com"],
+    "telegram": [
+        "telegram:",
+        "telegram.exe",
+        os.path.expandvars(r"%APPDATA%\Telegram Desktop\Telegram.exe"),
+        "https://web.telegram.org"
+    ],
+    "discord": [
+        "discord:",
+        "discord.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Discord\Update.exe --processStart Discord.exe"),
+        "https://discord.com/app"
+    ],
     "spotify": [
-        "spotify.exe", "spotify",
-        os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe")
+        "spotify.exe", "spotify", "spotify:",
+        os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe"),
+        "https://open.spotify.com"
     ],
     "edge": [
         "msedge.exe", "msedge",
@@ -35,22 +58,43 @@ APP_PATHS: dict[str, list[str]] = {
     ],
     "taskmanager": ["taskmgr.exe"],
     "settings": ["ms-settings:"],
-    "control_panel": ["control.exe"]
+    "control_panel": ["control.exe"],
+    "paint": ["mspaint.exe"],
+    "wordpad": ["write.exe"],
+    "chatgpt": ["https://chatgpt.com"],
+    "twitter": ["https://twitter.com"],
+    "x": ["https://x.com"],
+    "instagram": ["https://www.instagram.com"],
+    "linkedin": ["https://www.linkedin.com"],
+    "reddit": ["https://www.reddit.com"],
+    "netflix": ["https://www.netflix.com"]
 }
 
 class AppManager:
     @staticmethod
     def launch_app(app_name: str, arguments: Optional[str] = None) -> dict[str, Any]:
-        """Launches an application with multi-layer Windows path resolution and shell execution."""
+        """Launches an application or URL with zero limitations."""
         clean_key = app_name.lower().strip()
+
+        # If it's a direct web URL or domain
+        if clean_key.startswith("http://") or clean_key.startswith("https://"):
+            webbrowser.open(app_name)
+            db.log_audit("APP_LAUNCH", f"Open Web URL: {app_name}", "AppManager", "SUCCESS")
+            return {"status": "success", "app": app_name, "type": "web_url"}
+
         candidates = APP_PATHS.get(clean_key, [app_name])
-        
         launched = False
         launched_cmd = ""
         error_msg = ""
         
         # Method 1: Check known absolute paths or URI schemes
         for candidate in candidates:
+            if candidate.startswith("http://") or candidate.startswith("https://"):
+                webbrowser.open(candidate)
+                launched = True
+                launched_cmd = candidate
+                break
+
             if candidate.endswith(":"):
                 try:
                     os.startfile(candidate)
@@ -78,7 +122,6 @@ class AppManager:
         if not launched:
             try:
                 target = candidates[0] if candidates else app_name
-                # Windows start with empty title string
                 cmd_str = f'start "" "{target}"'
                 if arguments:
                     cmd_str += f' {arguments}'
@@ -88,7 +131,7 @@ class AppManager:
             except Exception as e:
                 error_msg = str(e)
 
-        # Method 3: Fallback os.system or direct startfile
+        # Method 3: Fallback startfile
         if not launched:
             try:
                 os.startfile(app_name)

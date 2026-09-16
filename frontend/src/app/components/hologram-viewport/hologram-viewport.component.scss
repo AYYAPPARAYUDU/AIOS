@@ -1,8 +1,9 @@
 .hologram-stage {
   position: relative;
-  border-radius: 8px;
-  border: 1px solid var(--border-cyan);
-  background: radial-gradient(circle at center, rgba(0, 100, 180, 0.25) 0%, rgba(5, 10, 20, 0.85) 75%);
+  border-radius: 10px;
+  border: 1px solid var(--border-gold);
+  background: radial-gradient(circle at center, rgba(255, 215, 0, 0.12) 0%, rgba(0, 100, 180, 0.15) 40%, rgba(3, 7, 18, 0.95) 85%);
+  box-shadow: inset 0 0 24px rgba(255, 215, 0, 0.1), 0 0 15px rgba(0, 240, 255, 0.15);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -32,11 +33,14 @@
 }
 
 .hologram-label {
-  font-family: var(--font-hud);
+  font-family: var(--font-celestial);
   font-size: 11px;
-  color: var(--neon-cyan);
+  font-weight: 700;
+  color: var(--neon-gold);
   letter-spacing: 2px;
-  text-shadow: 0 0 8px var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  display: flex;
+  align-items: center;
 }
 
 .hologram-voice-waves {
@@ -49,14 +53,15 @@
 .voice-bar {
   width: 3px;
   height: 6px;
-  background: var(--neon-cyan);
+  background: var(--neon-gold);
+  box-shadow: 0 0 6px var(--neon-gold);
   border-radius: 2px;
   animation: wave 1.2s infinite ease-in-out;
 
-  &:nth-child(2) { animation-delay: 0.15s; }
-  &:nth-child(3) { animation-delay: 0.3s; }
-  &:nth-child(4) { animation-delay: 0.45s; }
-  &:nth-child(5) { animation-delay: 0.6s; }
+  &:nth-child(2) { animation-delay: 0.15s; background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
+  &:nth-child(3) { animation-delay: 0.3s; background: var(--neon-gold); }
+  &:nth-child(4) { animation-delay: 0.45s; background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
+  &:nth-child(5) { animation-delay: 0.6s; background: var(--neon-gold); }
 }
 
 @keyframes wave {

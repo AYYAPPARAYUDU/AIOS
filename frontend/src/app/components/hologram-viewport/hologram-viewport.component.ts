@@ -18,11 +18,11 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
-  private coreMesh!: THREE.Mesh;
-  private innerSphere!: THREE.Mesh;
-  private innerRing!: THREE.Mesh;
-  private middleRing!: THREE.Mesh;
-  private outerRing!: THREE.Mesh;
+  private coreGroup = new THREE.Group();
+  private chakraRingInner!: THREE.Mesh;
+  private chakraRingMiddle!: THREE.Mesh;
+  private chakraRingOuter!: THREE.Mesh;
+  private chakraBladesGroup = new THREE.Group();
   private particleSystem!: THREE.Points;
   private clock = new THREE.Clock();
 
@@ -73,7 +73,7 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    this.camera.position.z = 15;
+    this.camera.position.z = 14;
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: canvas,
@@ -83,82 +83,117 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x00f0ff, 2.5, 60);
-    pointLight.position.set(0, 0, 10);
-    this.scene.add(pointLight);
+    const goldLight = new THREE.PointLight(0xffd700, 3.0, 70);
+    goldLight.position.set(0, 2, 8);
+    this.scene.add(goldLight);
 
-    this.buildCore();
-    this.buildGimbalRings();
-    this.buildParticles();
+    const cyanLight = new THREE.PointLight(0x00f0ff, 2.0, 70);
+    cyanLight.position.set(-6, -4, 6);
+    this.scene.add(cyanLight);
+
+    this.scene.add(this.coreGroup);
+    this.buildSudarshanaChakra();
+    this.buildCelestialParticles();
 
     this.animate();
   }
 
-  private buildCore(): void {
-    const geo = new THREE.IcosahedronGeometry(2.2, 2);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true, transparent: true, opacity: 0.85 });
-    this.coreMesh = new THREE.Mesh(geo, mat);
-    this.scene.add(this.coreMesh);
+  private buildSudarshanaChakra(): void {
+    // 1. Golden Radiant Core
+    const coreGeo = new THREE.IcosahedronGeometry(1.6, 2);
+    const coreMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      emissive: 0x996500,
+      wireframe: true,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+    this.coreGroup.add(coreMesh);
 
-    const innerGeo = new THREE.SphereGeometry(1.2, 16, 16);
-    const innerMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.65 });
-    this.innerSphere = new THREE.Mesh(innerGeo, innerMat);
-    this.coreMesh.add(this.innerSphere);
+    // Inner Glowing Jewel
+    const jewelGeo = new THREE.OctahedronGeometry(0.9, 0);
+    const jewelMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.85
+    });
+    const jewelMesh = new THREE.Mesh(jewelGeo, jewelMat);
+    this.coreGroup.add(jewelMesh);
+
+    // 2. Concentric Sudarshana Rings
+    const r1Geo = new THREE.TorusGeometry(2.8, 0.05, 16, 100);
+    const r1Mat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.1, metalness: 0.9 });
+    this.chakraRingInner = new THREE.Mesh(r1Geo, r1Mat);
+    this.coreGroup.add(this.chakraRingInner);
+
+    const r2Geo = new THREE.TorusGeometry(3.8, 0.04, 16, 100);
+    const r2Mat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.1, metalness: 0.9 });
+    this.chakraRingMiddle = new THREE.Mesh(r2Geo, r2Mat);
+    this.coreGroup.add(this.chakraRingMiddle);
+
+    const r3Geo = new THREE.TorusGeometry(4.8, 0.06, 16, 80);
+    const r3Mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, wireframe: true, transparent: true, opacity: 0.6 });
+    this.chakraRingOuter = new THREE.Mesh(r3Geo, r3Mat);
+    this.coreGroup.add(this.chakraRingOuter);
+
+    // 3. Sudarshana Chakra Radiating Blades (12 sacred blades)
+    const bladeCount = 12;
+    for (let i = 0; i < bladeCount; i++) {
+      const angle = (i / bladeCount) * Math.PI * 2;
+      const bladeGeo = new THREE.ConeGeometry(0.18, 1.2, 4);
+      const bladeMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+      const blade = new THREE.Mesh(bladeGeo, bladeMat);
+      blade.position.set(Math.cos(angle) * 3.8, Math.sin(angle) * 3.8, 0);
+      blade.rotation.z = angle - Math.PI / 2;
+      this.chakraBladesGroup.add(blade);
+    }
+    this.coreGroup.add(this.chakraBladesGroup);
   }
 
-  private buildGimbalRings(): void {
-    const r1Geo = new THREE.TorusGeometry(3.2, 0.04, 16, 100);
-    const r1Mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.7 });
-    this.innerRing = new THREE.Mesh(r1Geo, r1Mat);
-    this.scene.add(this.innerRing);
-
-    const r2Geo = new THREE.TorusGeometry(4.2, 0.05, 16, 100);
-    const r2Mat = new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.6 });
-    this.middleRing = new THREE.Mesh(r2Geo, r2Mat);
-    this.scene.add(this.middleRing);
-
-    const r3Geo = new THREE.TorusGeometry(5.2, 0.06, 16, 60);
-    const r3Mat = new THREE.MeshBasicMaterial({ color: 0x00ff9d, wireframe: true, transparent: true, opacity: 0.5 });
-    this.outerRing = new THREE.Mesh(r3Geo, r3Mat);
-    this.scene.add(this.outerRing);
-  }
-
-  private buildParticles(): void {
-    const count = 220;
+  private buildCelestialParticles(): void {
+    const count = 360;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+
+    const goldColor = new THREE.Color(0xffd700);
+    const cyanColor = new THREE.Color(0x00f0ff);
+    const saffColor = new THREE.Color(0xff5500);
 
     for (let i = 0; i < count * 3; i += 3) {
-      const radius = 6 + Math.random() * 4;
+      const radius = 5 + Math.random() * 5.5;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 2 - 1);
       pos[i] = radius * Math.sin(phi) * Math.cos(theta);
       pos[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
       pos[i + 2] = radius * Math.cos(phi);
+
+      const rChoice = Math.random();
+      const chosenColor = rChoice < 0.5 ? goldColor : (rChoice < 0.8 ? cyanColor : saffColor);
+      colors[i] = chosenColor.r;
+      colors[i + 1] = chosenColor.g;
+      colors[i + 2] = chosenColor.b;
     }
+
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const mat = new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.12, transparent: true, opacity: 0.75 });
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size: 0.14,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85
+    });
     this.particleSystem = new THREE.Points(geo, mat);
     this.scene.add(this.particleSystem);
   }
 
   public setHologramState(newState: string): void {
     this.state = newState;
-    if (!this.coreMesh) return;
-    const mat = this.coreMesh.material as THREE.MeshBasicMaterial;
-    if (newState === 'thinking') mat.color.setHex(0xffb800);
-    else if (newState === 'executing') mat.color.setHex(0x00ff9d);
-    else if (newState === 'listening') mat.color.setHex(0xff3366);
-    else {
-      // Color based on user mood
-      if (this.userMood === 'stressed') mat.color.setHex(0x00b4d8);
-      else if (this.userMood === 'happy') mat.color.setHex(0xffb800);
-      else if (this.userMood === 'tired') mat.color.setHex(0xb026ff);
-      else mat.color.setHex(0x00f0ff);
-    }
   }
 
   private animate = (): void => {
@@ -170,36 +205,38 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
 
     let speedMult = 1.0;
-    if (this.state === 'thinking') speedMult = 3.2;
-    if (this.state === 'executing') speedMult = 2.0;
-    if (this.state === 'speaking') speedMult = 1.5;
+    if (this.state === 'thinking') speedMult = 3.5;
+    if (this.state === 'executing') speedMult = 2.4;
+    if (this.state === 'speaking') speedMult = 1.8;
 
-    if (this.coreMesh) {
-      this.coreMesh.rotation.x += 0.4 * delta * speedMult;
-      this.coreMesh.rotation.y += 0.6 * delta * speedMult;
-      const pulse = 1.0 + Math.sin(time * 3) * 0.06 + (this.audioIntensity * 0.35);
-      this.coreMesh.scale.set(pulse, pulse, pulse);
+    // Spin core chakra
+    if (this.chakraBladesGroup) {
+      this.chakraBladesGroup.rotation.z += 0.8 * delta * speedMult;
+    }
+    if (this.chakraRingInner) {
+      this.chakraRingInner.rotation.x = time * 0.6 * speedMult;
+      this.chakraRingInner.rotation.y = time * 0.4 * speedMult;
+    }
+    if (this.chakraRingMiddle) {
+      this.chakraRingMiddle.rotation.y = -time * 0.5 * speedMult;
+      this.chakraRingMiddle.rotation.z = time * 0.3 * speedMult;
+    }
+    if (this.chakraRingOuter) {
+      this.chakraRingOuter.rotation.x = -time * 0.3 * speedMult;
+      this.chakraRingOuter.rotation.z = -time * 0.5 * speedMult;
     }
 
-    if (this.innerRing) {
-      this.innerRing.rotation.x = time * 0.8 * speedMult;
-      this.innerRing.rotation.y = time * 0.5 * speedMult;
-    }
-    if (this.middleRing) {
-      this.middleRing.rotation.y = -time * 0.7 * speedMult;
-      this.middleRing.rotation.z = time * 0.4 * speedMult;
-    }
-    if (this.outerRing) {
-      this.outerRing.rotation.x = -time * 0.3 * speedMult;
-      this.outerRing.rotation.z = -time * 0.6 * speedMult;
-    }
+    // Audio reactive pulse
+    const pulse = 1.0 + Math.sin(time * 3) * 0.05 + (this.audioIntensity * 0.4);
+    this.coreGroup.scale.set(pulse, pulse, pulse);
+
     if (this.particleSystem) {
-      this.particleSystem.rotation.y = time * 0.15;
-      this.particleSystem.rotation.x = time * 0.08;
+      this.particleSystem.rotation.y = time * 0.12;
+      this.particleSystem.rotation.x = time * 0.06;
     }
 
-    this.camera.position.x = this.mouse.x * 2.5;
-    this.camera.position.y = this.mouse.y * 2.0;
+    this.camera.position.x = this.mouse.x * 2.2;
+    this.camera.position.y = this.mouse.y * 1.8;
     this.camera.lookAt(this.scene.position);
 
     this.renderer.render(this.scene, this.camera);

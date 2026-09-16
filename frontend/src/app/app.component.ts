@@ -37,7 +37,7 @@ export class AppComponent implements OnInit {
   public activeTab: string = 'agents';
   public mobileView: 'diagnostics' | 'chat' | 'swarm' = 'chat';
   public isMobile: boolean = false;
-  public selectedAgentId: string = 'supervisor';
+  public selectedAgentId: string = 'abhi';
   public telemetry: SystemTelemetry | null = null;
   public agents: AgentModel[] = [];
   public isConnected: boolean = false;
@@ -97,19 +97,19 @@ export class AppComponent implements OnInit {
   onAgentSelected(agentId: string): void {
     this.selectedAgentId = agentId;
     if (this.chatConsole) {
-      this.chatConsole.addSystemMessage('JARVIS', `Routing requests to [${agentId.toUpperCase()}], sir.`);
+      this.chatConsole.addSystemMessage('ABHI', `Invoking Puranic deity [${agentId.toUpperCase()}] for your command.`);
     }
   }
 
   onScreenshotCaptured(previewBase64: string): void {
     if (this.chatConsole) {
-      this.chatConsole.addSystemMessage('JARVIS', 'Display buffer captured and archived to database, sir.', previewBase64);
+      this.chatConsole.addSystemMessage('ABHI', 'Hanuman has captured the visual display buffer and preserved it in Saraswati vault.', previewBase64);
     }
   }
 
   onAppLaunched(appName: string): void {
     if (this.chatConsole) {
-      this.chatConsole.addSystemMessage('JARVIS', `Initiating ${appName.toUpperCase()}, sir.`);
+      this.chatConsole.addSystemMessage('ABHI', `Indra has summoned application ${appName.toUpperCase()} on your workstation.`);
     }
   }
 

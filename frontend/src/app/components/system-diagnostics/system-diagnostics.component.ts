@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SystemTelemetry } from '../../core/models/system.model';
@@ -12,13 +12,14 @@ import { JarvisAudioService } from '../../core/services/jarvis-audio.service';
   templateUrl: './system-diagnostics.component.html',
   styleUrls: ['./system-diagnostics.component.scss']
 })
-export class SystemDiagnosticsComponent {
+export class SystemDiagnosticsComponent implements OnInit {
   @Input() telemetry: SystemTelemetry | null = null;
   @Output() appLaunched = new EventEmitter<string>();
   @Output() macroTriggered = new EventEmitter<string>();
 
-  public volumeLevel: number = 70;
-  public brightnessLevel: number = 80;
+  public volumeLevel: number = 50;
+  public isMuted: boolean = false;
+  public brightnessLevel: number = 70;
   public macroStatusText: string = '';
 
   constructor(
@@ -26,14 +27,38 @@ export class SystemDiagnosticsComponent {
     private audioService: JarvisAudioService
   ) {}
 
+  ngOnInit(): void {
+    this.refreshHardwareState();
+  }
+
+  refreshHardwareState(): void {
+    this.apiService.getSystemState().subscribe({
+      next: (state) => {
+        if (state) {
+          if (state.volume !== undefined) this.volumeLevel = state.volume;
+          if (state.muted !== undefined) this.isMuted = state.muted;
+          if (state.brightness !== undefined) this.brightnessLevel = state.brightness;
+        }
+      },
+      error: () => {}
+    });
+  }
+
   onVolumeChange(val: number): void {
-    this.volumeLevel = val;
-    this.apiService.setVolume(val).subscribe();
+    this.volumeLevel = Number(val);
+    this.isMuted = false;
+    this.apiService.setVolume(this.volumeLevel).subscribe();
+  }
+
+  toggleMute(): void {
+    this.audioService.playSciFiTone('beep');
+    this.isMuted = !this.isMuted;
+    this.apiService.setVolume(null, this.isMuted).subscribe();
   }
 
   onBrightnessChange(val: number): void {
-    this.brightnessLevel = val;
-    this.apiService.setBrightness(val).subscribe();
+    this.brightnessLevel = Number(val);
+    this.apiService.setBrightness(this.brightnessLevel).subscribe();
   }
 
   launchApp(app: string): void {

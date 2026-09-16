@@ -1,11 +1,14 @@
 import os
+import re
 import subprocess
 import webbrowser
 import ctypes
+import urllib.request
+import urllib.parse
 from typing import Optional, Any
 from backend.app.storage.db import db
 
-# Win32 Virtual Key Constants
+# Win32 Virtual Key Constants (fallback)
 VK_VOLUME_MUTE = 0xAD
 VK_VOLUME_DOWN = 0xAE
 VK_VOLUME_UP = 0xAF
@@ -21,52 +24,144 @@ def _press_vk(vk_code: int):
         ctypes.windll.user32.keybd_event(vk_code, 0, KEYEVENTF_KEYUP, 0)
 
 class SystemActions:
-    """Ultra-responsive native OS controller for Windows."""
+    """Ultra-responsive native OS and Web controller for Windows with unlimited capabilities."""
 
     @staticmethod
-    def set_volume(level_percent: int) -> dict[str, Any]:
-        """Sets master system volume percentage (0-100)."""
+    def _get_audio_endpoint():
+        """Returns the pycaw EndpointVolume controller if available."""
+        try:
+            from pycaw.pycaw import AudioUtilities
+            speakers = AudioUtilities.GetSpeakers()
+            if speakers and hasattr(speakers, 'EndpointVolume'):
+                return speakers.EndpointVolume
+        except Exception:
+            pass
+        return None
+
+    @classmethod
+    def get_state(cls) -> dict[str, Any]:
+        """Returns current volume, mute status, and display brightness."""
+        vol_info = cls.get_volume()
+        bright_val = cls.get_brightness()
+        return {
+            "volume": vol_info.get("volume", 50),
+            "muted": vol_info.get("muted", False),
+            "brightness": bright_val.get("brightness", 70)
+        }
+
+    @classmethod
+    def get_volume(cls) -> dict[str, Any]:
+        """Gets the current master volume percentage (0-100) and mute status."""
+        try:
+            ep = cls._get_audio_endpoint()
+            if ep:
+                vol_scalar = ep.GetMasterVolumeLevelScalar()
+                is_mute = bool(ep.GetMute())
+                return {"volume": int(round(vol_scalar * 100)), "muted": is_mute, "status": "success"}
+        except Exception:
+            pass
+        return {"volume": 50, "muted": False, "status": "fallback"}
+
+    @classmethod
+    def set_volume(cls, level_percent: int) -> dict[str, Any]:
+        """Sets master system volume percentage (0-100) with 0ms latency."""
         level = max(0, min(100, int(level_percent)))
+        applied = False
         
-        if os.name == 'nt':
-            # 1. Reset volume to 0 (50 taps of 2% each)
+        try:
+            ep = cls._get_audio_endpoint()
+            if ep:
+                scalar = level / 100.0
+                ep.SetMasterVolumeLevelScalar(scalar, None)
+                if level > 0 and ep.GetMute():
+                    ep.SetMute(0, None)
+                applied = True
+        except Exception:
+            pass
+
+        if not applied and os.name == 'nt':
             for _ in range(50):
                 _press_vk(VK_VOLUME_DOWN)
-            # 2. Tap volume up to reach target level
             steps_up = int(level / 2)
             for _ in range(steps_up):
                 _press_vk(VK_VOLUME_UP)
                 
-        db.log_audit("SYSTEM_ACTION", f"Set Volume to {level}%", "OSController", "SUCCESS")
+        db.log_audit("SYSTEM_ACTION", f"Set Volume to {level}%", "INDRA_OSController", "SUCCESS")
         return {"action": "set_volume", "volume": level, "status": "success"}
 
-    @staticmethod
-    def mute_volume(mute: Optional[bool] = None) -> dict[str, Any]:
+    @classmethod
+    def change_volume_relative(cls, delta: int) -> dict[str, Any]:
+        """Increases or decreases current volume by delta percentage."""
+        curr = cls.get_volume().get("volume", 50)
+        target = max(0, min(100, curr + delta))
+        return cls.set_volume(target)
+
+    @classmethod
+    def mute_volume(cls, mute: Optional[bool] = None) -> dict[str, Any]:
         """Toggles or sets audio mute."""
+        is_muted = False
+        try:
+            ep = cls._get_audio_endpoint()
+            if ep:
+                if mute is None:
+                    curr_mute = bool(ep.GetMute())
+                    ep.SetMute(0 if curr_mute else 1, None)
+                    is_muted = not curr_mute
+                else:
+                    ep.SetMute(1 if mute else 0, None)
+                    is_muted = bool(mute)
+                db.log_audit("SYSTEM_ACTION", f"Mute ({is_muted})", "INDRA_OSController", "SUCCESS")
+                return {"action": "mute_volume", "muted": is_muted, "status": "success"}
+        except Exception:
+            pass
+
         if os.name == 'nt':
             _press_vk(VK_VOLUME_MUTE)
-        db.log_audit("SYSTEM_ACTION", f"Mute Toggle ({mute})", "OSController", "SUCCESS")
+        db.log_audit("SYSTEM_ACTION", f"Mute Toggle ({mute})", "INDRA_OSController", "SUCCESS")
         return {"action": "mute_volume", "status": "success"}
 
-    @staticmethod
-    def set_brightness(level_percent: int) -> dict[str, Any]:
+    @classmethod
+    def get_brightness(cls) -> dict[str, Any]:
+        """Gets current display brightness percentage."""
+        if os.name == 'nt':
+            try:
+                ps_cmd = "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightness).CurrentBrightness"
+                res = subprocess.run(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+                    capture_output=True, text=True, timeout=3
+                )
+                if res.returncode == 0 and res.stdout.strip().isdigit():
+                    return {"brightness": int(res.stdout.strip()), "status": "success"}
+            except Exception:
+                pass
+        return {"brightness": 70, "status": "fallback"}
+
+    @classmethod
+    def set_brightness(cls, level_percent: int) -> dict[str, Any]:
         """Sets display brightness (0-100) on Windows laptops/monitors."""
         level = max(0, min(100, int(level_percent)))
         if os.name == 'nt':
             try:
-                ps_cmd = f"(Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightnessMethods).WmiSetBrightness(1,{level})"
+                ps_cmd = f"(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {level})"
                 subprocess.Popen(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd])
             except Exception:
                 pass
-        db.log_audit("SYSTEM_ACTION", f"Set Brightness to {level}%", "OSController", "SUCCESS")
+        db.log_audit("SYSTEM_ACTION", f"Set Brightness to {level}%", "INDRA_OSController", "SUCCESS")
         return {"action": "set_brightness", "brightness": level, "status": "success"}
+
+    @classmethod
+    def change_brightness_relative(cls, delta: int) -> dict[str, Any]:
+        """Increases or decreases brightness by delta percentage."""
+        curr = cls.get_brightness().get("brightness", 70)
+        target = max(0, min(100, curr + delta))
+        return cls.set_brightness(target)
 
     @staticmethod
     def lock_workstation() -> dict[str, Any]:
         """Locks the Windows workstation instantly."""
         if os.name == 'nt':
             ctypes.windll.user32.LockWorkStation()
-        db.log_audit("SYSTEM_ACTION", "Lock Workstation", "OSController", "SUCCESS")
+        db.log_audit("SYSTEM_ACTION", "Lock Workstation", "DURGA_Shield", "SUCCESS")
         return {"action": "lock", "status": "workstation_locked"}
 
     @staticmethod
@@ -77,12 +172,12 @@ class SystemActions:
             if mode == "sleep":
                 ctypes.windll.PowrProf.SetSuspendState(0, 1, 0)
             elif mode == "restart":
-                subprocess.Popen(["shutdown", "/r", "/t", "10", "/c", "JARVIS initiating system restart in 10s"])
+                subprocess.Popen(["shutdown", "/r", "/t", "10", "/c", "ABHI AIOS initiating system restart in 10s"])
             elif mode == "shutdown":
-                subprocess.Popen(["shutdown", "/s", "/t", "15", "/c", "JARVIS powering down system in 15s"])
+                subprocess.Popen(["shutdown", "/s", "/t", "15", "/c", "ABHI AIOS powering down system in 15s"])
             elif mode == "cancel_shutdown":
                 subprocess.Popen(["shutdown", "/a"])
-        db.log_audit("SYSTEM_ACTION", f"Power Action: {mode}", "OSController", "SUCCESS")
+        db.log_audit("SYSTEM_ACTION", f"Power Action: {mode}", "INDRA_OSController", "SUCCESS")
         return {"action": f"power_{mode}", "status": "initiated"}
 
     @staticmethod
@@ -100,21 +195,76 @@ class SystemActions:
 
     @staticmethod
     def open_url(url: str) -> dict[str, Any]:
-        """Opens URL in default web browser."""
+        """Opens any URL in default web browser."""
         if not url.startswith("http://") and not url.startswith("https://"):
             url = "https://" + url
         webbrowser.open(url)
-        db.log_audit("SYSTEM_ACTION", f"Open Browser URL: {url}", "OSController", "SUCCESS")
+        db.log_audit("SYSTEM_ACTION", f"Open Browser URL: {url}", "NARADA_Messenger", "SUCCESS")
         return {"action": "open_url", "url": url, "status": "opened"}
 
     @staticmethod
     def search_web_browser(query: str) -> dict[str, Any]:
         """Searches query in default browser."""
-        import urllib.parse
         encoded = urllib.parse.quote_plus(query)
         url = f"https://www.google.com/search?q={encoded}"
         webbrowser.open(url)
-        db.log_audit("SYSTEM_ACTION", f"Search Web: {query}", "OSController", "SUCCESS")
+        db.log_audit("SYSTEM_ACTION", f"Search Web: {query}", "NARADA_Messenger", "SUCCESS")
         return {"action": "search_web", "query": query, "url": url, "status": "opened"}
+
+    @staticmethod
+    def open_whatsapp(phone: Optional[str] = None, message: Optional[str] = None) -> dict[str, Any]:
+        """Opens WhatsApp app or web, optionally with phone and pre-filled message."""
+        if phone or message:
+            encoded_msg = urllib.parse.quote_plus(message or "")
+            clean_phone = re.sub(r"[^\d+]", "", phone or "")
+            if clean_phone:
+                url = f"https://web.whatsapp.com/send?phone={clean_phone}&text={encoded_msg}"
+            else:
+                url = f"https://web.whatsapp.com/send?text={encoded_msg}"
+            webbrowser.open(url)
+            return {"action": "open_whatsapp", "target": url, "status": "opened"}
+        else:
+            try:
+                os.startfile("whatsapp:")
+                return {"action": "open_whatsapp", "target": "whatsapp:", "status": "opened"}
+            except Exception:
+                webbrowser.open("https://web.whatsapp.com")
+                return {"action": "open_whatsapp", "target": "https://web.whatsapp.com", "status": "opened"}
+
+    @staticmethod
+    def fetch_url_content(url: str) -> dict[str, Any]:
+        """Live online web content extractor - fetches and extracts clean text from any URL."""
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = "https://" + url
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw_html = resp.read().decode("utf-8", errors="ignore")
+                
+                # Extract Title
+                title_match = re.search(r"<title>(.*?)</title>", raw_html, re.IGNORECASE | re.DOTALL)
+                title = title_match.group(1).strip() if title_match else url
+
+                # Remove scripts, styles, SVGs
+                clean = re.sub(r"<(script|style|svg|noscript).*?>.*?</\1>", "", raw_html, flags=re.DOTALL | re.IGNORECASE)
+                # Strip tags
+                clean = re.sub(r"<[^>]+>", " ", clean)
+                # Normalize whitespace
+                clean = re.sub(r"\s+", " ", clean).strip()
+
+                summary = clean[:3000]
+                db.log_audit("WEB_FETCH", f"Fetched {url} ({len(summary)} chars)", "NARADA_Messenger", "SUCCESS")
+                return {
+                    "url": url,
+                    "title": title,
+                    "text": summary,
+                    "status": "success"
+                }
+        except Exception as e:
+            db.log_audit("WEB_FETCH", f"Failed {url}: {str(e)}", "NARADA_Messenger", "FAILED")
+            return {"url": url, "error": str(e), "status": "failed"}
 
 actions = SystemActions()

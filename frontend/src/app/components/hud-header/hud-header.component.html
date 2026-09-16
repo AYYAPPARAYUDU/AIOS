@@ -1,9 +1,11 @@
 <header class="hud-header">
   <div class="brand">
-    <i class="fas fa-atom brand-icon"></i>
+    <div class="brand-icon-box">
+      <i class="fas fa-sun brand-icon"></i>
+    </div>
     <div>
-      <div class="brand-title">J.A.R.V.I.S. AIOS</div>
-      <div class="brand-subtitle">LOCAL-FIRST MULTI-AGENT OPERATING SYSTEM</div>
+      <div class="brand-title">ABHI AIOS</div>
+      <div class="brand-subtitle">CELESTIAL PURANIC MULTI-AGENT OPERATING SYSTEM</div>
     </div>
   </div>
 
@@ -13,11 +15,11 @@
       <span>LLM: OLLAMA (QWEN3:8B)</span>
     </div>
     <div class="status-badge online">
-      <i class="fas fa-database" style="color:var(--neon-cyan);"></i>
-      <span>VAULT: 50GB LOCAL DB</span>
+      <i class="fas fa-book-open" style="color:var(--neon-gold);"></i>
+      <span>SARASWATI VAULT: 50GB</span>
     </div>
     <div class="status-badge online">
-      <i class="fas fa-network-wired" style="color:var(--neon-green);"></i>
+      <i class="fas fa-network-wired" style="color:var(--neon-cyan);"></i>
       <span>{{ netSpeedText }}</span>
     </div>
   </div>
@@ -25,13 +27,13 @@
   <div class="hud-actions">
     <button class="btn-cyber" [class.active]="audioService.speechEnabled" (click)="toggleVoice()">
       <i class="fas" [ngClass]="audioService.speechEnabled ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
-      <span>VOICE: {{ audioService.speechEnabled ? 'ON' : 'OFF' }}</span>
+      <span>DIVINE SPEECH: {{ audioService.speechEnabled ? 'ON' : 'OFF' }}</span>
     </button>
     <button class="btn-cyber" (click)="takeScreenshot()">
-      <i class="fas fa-camera"></i> CAPTURE
+      <i class="fas fa-camera"></i> HANUMAN CAPTURE
     </button>
     <button class="btn-cyber danger" (click)="lockWorkstation()">
-      <i class="fas fa-lock"></i> LOCK OS
+      <i class="fas fa-shield"></i> DURGA SHIELD
     </button>
   </div>
 </header>

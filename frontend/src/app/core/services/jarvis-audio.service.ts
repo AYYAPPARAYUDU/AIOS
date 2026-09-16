@@ -14,6 +14,8 @@ export class JarvisAudioService {
 
   private recognition: any = null;
   private audioCtx: AudioContext | null = null;
+  private currentAudioElement: HTMLAudioElement | null = null;
+  private pulseInterval: any = null;
 
   constructor() {
     this.initAudioContext();
@@ -122,49 +124,97 @@ export class JarvisAudioService {
   }
 
   public speak(text: string) {
-    if (!this.speechEnabled || !('speechSynthesis' in window)) return;
+    if (!this.speechEnabled) return;
 
-    window.speechSynthesis.cancel();
+    // Stop any currently playing audio
+    if (this.currentAudioElement) {
+      this.currentAudioElement.pause();
+      this.currentAudioElement = null;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (this.pulseInterval) {
+      clearInterval(this.pulseInterval);
+      this.pulseInterval = null;
+    }
 
     const cleanText = text
       .replace(/```[\s\S]*?```/g, 'Code block omitted.')
       .replace(/`([^`]+)`/g, '$1')
-      .replace(/[*_#]/g, '');
+      .replace(/[*_#]/g, '')
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+      .trim();
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.rate = 1.02;
-    utterance.pitch = 0.94;
+    if (!cleanText) return;
 
-    const voices = window.speechSynthesis.getVoices();
-    const jarvisVoice = voices.find(v => 
-      v.name.includes('UK English Male') || 
-      v.name.includes('George') || 
-      v.name.includes('Oliver') ||
-      v.name.includes('Daniel') ||
-      v.name.includes('Arthur') ||
-      v.lang.includes('en-GB') ||
-      v.name.includes('David')
-    );
-    if (jarvisVoice) utterance.voice = jarvisVoice;
+    // 1. Try Neural Lady Voice via backend streaming
+    const ttsUrl = `/api/voice/tts?text=${encodeURIComponent(cleanText)}&voice=en-IN-NeerjaNeural`;
+    const audio = new Audio(ttsUrl);
+    this.currentAudioElement = audio;
 
-    let pulseInterval: any = null;
+    this.avatarState$.next('speaking');
+    this.pulseInterval = setInterval(() => {
+      const freq = 0.3 + Math.random() * 0.7;
+      this.audioIntensity$.next(freq);
+    }, 60);
 
-    utterance.onstart = () => {
+    audio.onplay = () => {
       this.avatarState$.next('speaking');
-      pulseInterval = setInterval(() => {
-        const freq = 0.25 + Math.random() * 0.75;
-        this.audioIntensity$.next(freq);
-      }, 70);
     };
 
+    audio.onended = () => {
+      if (this.pulseInterval) clearInterval(this.pulseInterval);
+      this.audioIntensity$.next(0);
+      this.avatarState$.next('idle');
+      this.currentAudioElement = null;
+    };
+
+    audio.onerror = () => {
+      // Fallback to browser SpeechSynthesis with Lady voice
+      this.fallbackBrowserSpeech(cleanText);
+    };
+
+    audio.play().catch(() => {
+      this.fallbackBrowserSpeech(cleanText);
+    });
+  }
+
+  private fallbackBrowserSpeech(cleanText: string) {
+    if (!('speechSynthesis' in window)) {
+      if (this.pulseInterval) clearInterval(this.pulseInterval);
+      this.audioIntensity$.next(0);
+      this.avatarState$.next('idle');
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.08; // Pleasant celestial lady tone
+
+    const voices = window.speechSynthesis.getVoices();
+    // Prioritize female / lady voices (Zira, Neerja, Aria, Jenny, Sonia, Samantha, Female)
+    const ladyVoice = voices.find(v => 
+      v.name.includes('Zira') ||
+      v.name.includes('Neerja') ||
+      v.name.includes('Aria') ||
+      v.name.includes('Jenny') ||
+      v.name.includes('Sonia') ||
+      v.name.includes('Samantha') ||
+      v.name.includes('Female') ||
+      v.name.includes('Google UK English Female') ||
+      v.name.includes('Google US English Female')
+    );
+    if (ladyVoice) utterance.voice = ladyVoice;
+
     utterance.onend = () => {
-      if (pulseInterval) clearInterval(pulseInterval);
+      if (this.pulseInterval) clearInterval(this.pulseInterval);
       this.audioIntensity$.next(0);
       this.avatarState$.next('idle');
     };
 
     utterance.onerror = () => {
-      if (pulseInterval) clearInterval(pulseInterval);
+      if (this.pulseInterval) clearInterval(this.pulseInterval);
       this.audioIntensity$.next(0);
       this.avatarState$.next('idle');
     };

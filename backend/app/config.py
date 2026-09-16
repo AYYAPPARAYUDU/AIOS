@@ -4,8 +4,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # App Information
-    APP_NAME: str = "JARVIS AIOS"
-    VERSION: str = "2.0.0"
+    APP_NAME: str = "ABHI AIOS"
+    VERSION: str = "3.0.0"
     ENVIRONMENT: str = "production"
     DEBUG: bool = False
     

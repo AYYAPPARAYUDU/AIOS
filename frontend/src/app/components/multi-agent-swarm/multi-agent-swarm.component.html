@@ -1,7 +1,10 @@
 <div class="agent-swarm-panel">
-  <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); margin-bottom:8px; letter-spacing:1px; display:flex; justify-content:space-between; align-items:center;">
-    <span><i class="fas fa-users-cog"></i> MULTI-AGENT SWARM</span>
-    <span style="font-size:10px; color:var(--text-dim);">CLICK TO SELECT</span>
+  <div class="swarm-header">
+    <div class="swarm-title">
+      <i class="fas fa-om" style="color:var(--neon-gold); margin-right:6px;"></i>
+      <span>PURANIC DEITY SWARM</span>
+    </div>
+    <span class="swarm-sub">CLICK TO INVOKE</span>
   </div>
 
   <div class="agent-list">
@@ -10,15 +13,27 @@
       class="agent-card" 
       [class.selected]="selectedAgentId === a.id"
       (click)="selectAgent(a.id)"
+      [style.--agent-color]="a.avatar_color || '#ffd700'"
     >
       <div class="agent-card-header">
-        <div class="agent-name" [style.color]="a.avatar_color || '#fff'">
-          <i *ngIf="selectedAgentId === a.id" class="fas fa-check-circle" style="color:var(--neon-cyan); margin-right:4px;"></i>
-          {{ a.name }}
+        <div class="agent-icon-badge" [style.color]="a.avatar_color || '#ffd700'">
+          <i class="fas" [ngClass]="getDeityIcon(a.id)"></i>
+        </div>
+        <div class="agent-meta">
+          <div class="agent-name" [style.color]="a.avatar_color || '#ffd700'">
+            <i *ngIf="selectedAgentId === a.id" class="fas fa-check-circle" style="color:var(--neon-gold); margin-right:4px;"></i>
+            {{ a.name }}
+          </div>
+          <div class="agent-deity-role">{{ a.deity || a.role }}</div>
         </div>
         <div class="agent-status-tag" [ngClass]="a.status">{{ a.status | uppercase }}</div>
       </div>
-      <div class="agent-role">{{ a.role }}</div>
+      
+      <div *ngIf="a.mantra" class="agent-mantra">
+        <i class="fas fa-sun" style="font-size:9px; margin-right:4px;"></i>
+        <span>{{ a.mantra }}</span>
+      </div>
+
       <div *ngIf="a.capabilities" class="capabilities-list">
         <span *ngFor="let cap of a.capabilities" class="cap-pill">{{ cap }}</span>
       </div>

@@ -14,15 +14,15 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./chat-console.component.scss']
 })
 export class ChatConsoleComponent implements AfterViewChecked {
-  @Input() selectedAgent: string = 'supervisor';
+  @Input() selectedAgent: string = 'abhi';
   @Output() agentResponse = new EventEmitter<any>();
   @ViewChild('chatScroll') private chatScrollContainer!: ElementRef;
 
   public messages: ChatMessage[] = [
     {
-      sender: 'JARVIS',
+      sender: 'ABHI',
       role: 'assistant',
-      content: 'Online and ready, sir. All systems, 50GB storage vault, and OS controllers are active.'
+      content: 'I am ABHI, your Supreme Cognitive Orchestrator. The Puranic deity swarm (Indra, Saraswati, Narada, Hanuman, Lakshmi, Durga, Vishwakarma) stands ready to execute your command with divine precision.'
     }
   ];
   public inputText: string = '';
@@ -61,12 +61,12 @@ export class ChatConsoleComponent implements AfterViewChecked {
     this.inputText = '';
     this.audioService.avatarState$.next('thinking');
 
-    this.apiService.chatWithJarvis(text, this.selectedAgent).subscribe({
+    this.apiService.chatWithAbhi(text, this.selectedAgent).subscribe({
       next: (res) => {
         this.audioService.avatarState$.next('idle');
-        const answer = res.response || 'Task executed successfully, sir.';
+        const answer = res.response || 'Divine task completed with absolute precision.';
         this.messages.push({
-          sender: 'JARVIS',
+          sender: 'ABHI',
           role: 'assistant',
           content: answer,
           toolCall: res.tool_call
@@ -78,9 +78,9 @@ export class ChatConsoleComponent implements AfterViewChecked {
         this.audioService.avatarState$.next('idle');
         this.audioService.playSciFiTone('error');
         this.messages.push({
-          sender: 'JARVIS',
+          sender: 'ABHI',
           role: 'assistant',
-          content: `An anomaly occurred: ${err.message}`
+          content: `Celestial anomaly encountered: ${err.message}`
         });
       }
     });

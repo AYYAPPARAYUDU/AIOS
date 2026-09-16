@@ -41,6 +41,18 @@ class Database:
                 FOREIGN KEY (conversation_id) REFERENCES conversations(id)
             )""")
 
+            # Contacts Directory for WhatsApp & Email Memory
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE,
+                phone TEXT,
+                email TEXT,
+                notes TEXT,
+                created_at REAL,
+                updated_at REAL
+            )""")
+
             # Long-term Memory & Knowledge
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS memory (
@@ -94,6 +106,48 @@ class Database:
 
             conn.commit()
 
+    # Contacts Management (WhatsApp & Email Memory)
+    def save_contact(self, name: str, phone: Optional[str] = None, email: Optional[str] = None, notes: Optional[str] = None) -> dict[str, Any]:
+        clean_name = name.lower().strip()
+        now = time.time()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+            INSERT INTO contacts (name, phone, email, notes, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET 
+                phone = COALESCE(excluded.phone, contacts.phone),
+                email = COALESCE(excluded.email, contacts.email),
+                notes = COALESCE(excluded.notes, contacts.notes),
+                updated_at = excluded.updated_at
+            """, (clean_name, phone, email, notes, now, now))
+            conn.commit()
+            return {"status": "success", "contact": clean_name, "phone": phone, "email": email}
+
+    def get_contact(self, name: str) -> Optional[dict[str, Any]]:
+        clean_name = name.lower().strip()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM contacts WHERE name = ? OR name LIKE ?", (clean_name, f"%{clean_name}%"))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            return None
+
+    def list_contacts(self) -> list[dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM contacts ORDER BY name ASC")
+            return [dict(row) for row in cursor.fetchall()]
+
+    def delete_contact(self, name: str) -> bool:
+        clean_name = name.lower().strip()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM contacts WHERE name = ?", (clean_name,))
+            conn.commit()
+            return cursor.rowcount > 0
+
     # Memory Operations
     def set_memory(self, key: str, value: Any, category: str = "general"):
         val_str = json.dumps(value) if not isinstance(value, str) else value
@@ -128,8 +182,8 @@ class Database:
                 cursor.execute("SELECT * FROM memory ORDER BY updated_at DESC")
             return [dict(row) for row in cursor.fetchall()]
 
-    # Conversation Operations
-    def add_message(self, conversation_id: str, role: str, content: str, sender_name: str = "Jarvis", tool_calls: Optional[list] = None, thoughts: Optional[str] = None):
+    # Conversation & Session Operations
+    def add_message(self, conversation_id: str, role: str, content: str, sender_name: str = "ABHI", tool_calls: Optional[list] = None, thoughts: Optional[str] = None):
         with self.get_connection() as conn:
             cursor = conn.cursor()
             now = time.time()
@@ -162,6 +216,48 @@ class Database:
                         pass
                 messages.append(item)
             return messages
+
+    def clear_conversation(self, conversation_id: str) -> bool:
+        """Deletes all messages for a specific session."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
+            cursor.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
+            conn.commit()
+            return True
+
+    def export_session_to_vault(self, conversation_id: str) -> dict[str, Any]:
+        """Saves session transcript to the 50GB local storage vault as a formatted markdown file."""
+        messages = self.get_messages(conversation_id, limit=500)
+        if not messages:
+            return {"status": "empty", "message": "No messages to export"}
+            
+        timestamp_str = time.strftime("%Y%m%d_%H%M%S")
+        filename = f"session_{conversation_id}_{timestamp_str}.md"
+        file_path = settings.STORAGE_POOL_DIR / "documents" / filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        md_content = f"# ABHI AIOS Session Archive — {conversation_id}\n*Exported on {time.ctime()}*\n\n---\n\n"
+        for m in messages:
+            sender = m.get("sender_name", m.get("role", "Unknown"))
+            md_content += f"### **{sender.upper()}**:\n{m.get('content', '')}\n\n"
+            if m.get("tool_calls"):
+                md_content += f"> **Deity Tool Actions**: `{json.dumps(m['tool_calls'])}`\n\n"
+                
+        file_path.write_text(md_content, encoding="utf-8")
+        
+        # Index in 50GB local vault
+        self.index_file(
+            file_path=str(file_path),
+            file_name=filename,
+            file_size=len(md_content.encode("utf-8")),
+            extension=".md",
+            category="session_archives",
+            summary=f"Saved conversation session transcript with {len(messages)} messages.",
+            keywords=f"session,{conversation_id},transcript,archive",
+            last_modified=time.time()
+        )
+        return {"status": "success", "file_name": filename, "file_path": str(file_path), "messages_count": len(messages)}
 
     # File Index Operations
     def index_file(self, file_path: str, file_name: str, file_size: int, extension: str, category: str, summary: str = "", keywords: str = "", embedding: Optional[list] = None, last_modified: float = 0):

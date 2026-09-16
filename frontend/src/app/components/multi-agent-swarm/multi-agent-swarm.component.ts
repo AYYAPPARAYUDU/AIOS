@@ -12,7 +12,7 @@ import { JarvisAudioService } from '../../core/services/jarvis-audio.service';
 })
 export class MultiAgentSwarmComponent {
   @Input() agents: AgentModel[] = [];
-  @Input() selectedAgentId: string = 'supervisor';
+  @Input() selectedAgentId: string = 'abhi';
   @Output() agentSelected = new EventEmitter<string>();
 
   constructor(private audioService: JarvisAudioService) {}
@@ -20,5 +20,33 @@ export class MultiAgentSwarmComponent {
   selectAgent(agentId: string): void {
     this.audioService.playSciFiTone('ack');
     this.agentSelected.emit(agentId);
+  }
+
+  getDeityIcon(agentId: string): string {
+    switch (agentId.toLowerCase()) {
+      case 'abhi':
+      case 'supervisor':
+        return 'fa-crown';
+      case 'indra':
+      case 'os_controller':
+        return 'fa-bolt-lightning';
+      case 'saraswati':
+      case 'storage_agent':
+        return 'fa-book-open';
+      case 'narada':
+      case 'researcher':
+        return 'fa-globe';
+      case 'hanuman':
+      case 'automation_agent':
+        return 'fa-fire';
+      case 'lakshmi':
+        return 'fa-heart';
+      case 'durga':
+        return 'fa-shield-halved';
+      case 'vishwakarma':
+        return 'fa-cubes';
+      default:
+        return 'fa-user-astronaut';
+    }
   }
 }

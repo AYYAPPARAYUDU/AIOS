@@ -1,7 +1,7 @@
 <section class="cyber-panel">
   <div class="panel-header">
-    <span><i class="fas fa-tachometer-alt"></i> System Diagnostics</span>
-    <span style="font-size:10px; color:var(--neon-green);">HOST & BIOMETRICS</span>
+    <span><i class="fas fa-om" style="color:var(--neon-gold);"></i> LAKSHMI & INDRA CONTROLS</span>
+    <span style="font-size:10px; color:var(--neon-gold); font-family:var(--font-hud);">DIVINE TELEMETRY</span>
   </div>
 
   <div class="panel-body">
@@ -15,7 +15,7 @@
         <div class="bio-stat">
           <span class="bio-label">STRESS INDEX</span>
           <div class="bio-val-row">
-            <span class="bio-num" [style.color]="telemetry!.emotion!.stress_level > 50 ? 'var(--neon-red)' : 'var(--neon-green)'">
+            <span class="bio-num" [style.color]="telemetry!.emotion!.stress_level > 50 ? 'var(--neon-crimson)' : 'var(--neon-emerald)'">
               {{ telemetry!.emotion!.stress_level }}%
             </span>
             <div class="bio-mini-progress">
@@ -39,22 +39,22 @@
       </div>
     </div>
 
-    <!-- CPU & RAM Gauges -->
+    <!-- CPU & RAM Gauges (Lakshmi Harmony) -->
     <div class="metric-grid">
       <div class="metric-card">
         <div class="metric-title">
-          <span>CPU Load</span>
+          <span>CPU Compute</span>
           <i class="fas fa-microchip"></i>
         </div>
         <div class="metric-val">{{ telemetry?.cpu?.percent || 0 }}%</div>
         <div class="metric-progress">
-          <div class="progress-bar" [style.width.%]="telemetry?.cpu?.percent || 0"></div>
+          <div class="progress-bar cyan" [style.width.%]="telemetry?.cpu?.percent || 0"></div>
         </div>
       </div>
 
       <div class="metric-card">
         <div class="metric-title">
-          <span>RAM Memory</span>
+          <span>RAM Pool</span>
           <i class="fas fa-memory"></i>
         </div>
         <div class="metric-val">{{ telemetry?.memory?.percent || 0 }}%</div>
@@ -64,10 +64,10 @@
       </div>
     </div>
 
-    <!-- 50GB Storage Pool Widget -->
+    <!-- 50GB Storage Pool Widget (Saraswati Vault) -->
     <div class="storage-pool-box">
       <div class="storage-pool-header">
-        <span><i class="fas fa-hard-drive"></i> 50GB Storage Pool</span>
+        <span><i class="fas fa-book-open" style="color:var(--neon-gold); margin-right:4px;"></i> Saraswati 50GB Vault</span>
         <span>{{ telemetry?.storage_pool_50gb?.used_mb || 0 }} MB / 50 GB</span>
       </div>
       <div class="metric-progress" style="height:8px;">
@@ -75,9 +75,54 @@
       </div>
     </div>
 
-    <!-- AI MACRO PROTOCOLS & RAM PURGE -->
-    <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-gold); letter-spacing:1px; margin-top:2px; display:flex; justify-content:space-between; align-items:center;">
-      <span><i class="fas fa-wand-magic-sparkles"></i> AI PROTOCOLS</span>
+    <!-- INDRA OS HARDWARE SLIDERS (Volume & Brightness) -->
+    <div class="hardware-ctrl-header">
+      <span><i class="fas fa-bolt" style="color:var(--neon-cyan);"></i> INDRA HARDWARE CONTROLS</span>
+      <span class="ctrl-subtag">NATIVE OS</span>
+    </div>
+    
+    <div class="control-slider-group">
+      <div class="slider-item">
+        <div class="slider-label-row">
+          <label><i class="fas fa-volume-high"></i> Master Volume</label>
+          <div class="slider-val-badge">
+            <span>{{ isMuted ? 'MUTED' : volumeLevel + '%' }}</span>
+            <button class="btn-mute" [class.muted]="isMuted" (click)="toggleMute()" title="Toggle Audio Mute">
+              <i class="fas" [ngClass]="isMuted ? 'fa-volume-xmark' : 'fa-volume-high'"></i>
+            </button>
+          </div>
+        </div>
+        <input 
+          type="range" 
+          min="0" 
+          max="100" 
+          [ngModel]="volumeLevel" 
+          (ngModelChange)="onVolumeChange($event)"
+          class="cyber-range gold"
+        >
+      </div>
+
+      <div class="slider-item">
+        <div class="slider-label-row">
+          <label><i class="fas fa-sun"></i> Display Luminance</label>
+          <div class="slider-val-badge">
+            <span>{{ brightnessLevel }}%</span>
+          </div>
+        </div>
+        <input 
+          type="range" 
+          min="0" 
+          max="100" 
+          [ngModel]="brightnessLevel" 
+          (ngModelChange)="onBrightnessChange($event)"
+          class="cyber-range cyan"
+        >
+      </div>
+    </div>
+
+    <!-- HANUMAN AI PROTOCOLS & RAM PURGE -->
+    <div class="protocols-header">
+      <span><i class="fas fa-fire" style="color:var(--neon-saffron);"></i> HANUMAN SPEED PROTOCOLS</span>
       <button class="btn-mini-action" (click)="purgeRam()"><i class="fas fa-broom"></i> PURGE RAM</button>
     </div>
     <div class="macro-grid">
@@ -88,35 +133,26 @@
         <i class="fas fa-shield-halved"></i> Focus Mode
       </button>
       <button class="btn-macro" (click)="runMacro('night_mode')">
-        <i class="fas fa-moon"></i> Night Protocol
+        <i class="fas fa-moon"></i> Night Mode
       </button>
     </div>
     <div *ngIf="macroStatusText" class="macro-alert">
       {{ macroStatusText }}
     </div>
 
-    <!-- OS Sliders -->
-    <div class="control-slider-group">
-      <div class="slider-item">
-        <label><i class="fas fa-volume-high"></i> Volume</label>
-        <input type="range" min="0" max="100" [ngModel]="volumeLevel" (ngModelChange)="onVolumeChange($event)">
-      </div>
-      <div class="slider-item">
-        <label><i class="fas fa-sun"></i> Brightness</label>
-        <input type="range" min="0" max="100" [ngModel]="brightnessLevel" (ngModelChange)="onBrightnessChange($event)">
-      </div>
-    </div>
-
-    <!-- App Launchers -->
-    <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); letter-spacing:1px; margin-top:2px;">
-      <i class="fas fa-rocket"></i> QUICK APP LAUNCH
+    <!-- INDRA QUICK APP SUMMONERS -->
+    <div class="apps-header">
+      <i class="fas fa-rocket"></i> INDRA APP SUMMONERS
     </div>
     <div class="app-grid">
+      <button class="btn-app" (click)="launchApp('whatsapp')" style="border-color:rgba(37,211,102,0.4);"><i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp</button>
+      <button class="btn-app" (click)="launchApp('youtube')" style="border-color:rgba(255,0,0,0.4);"><i class="fab fa-youtube" style="color:#ff0000;"></i> YouTube</button>
+      <button class="btn-app" (click)="launchApp('github')"><i class="fab fa-github" style="color:#fff;"></i> GitHub</button>
       <button class="btn-app" (click)="launchApp('chrome')"><i class="fab fa-chrome"></i> Chrome</button>
       <button class="btn-app" (click)="launchApp('vscode')"><i class="fas fa-code"></i> VS Code</button>
       <button class="btn-app" (click)="launchApp('terminal')"><i class="fas fa-terminal"></i> Terminal</button>
       <button class="btn-app" (click)="launchApp('notepad')"><i class="fas fa-sticky-note"></i> Notepad</button>
-      <button class="btn-app" (click)="launchApp('calc')"><i class="fas fa-calculator"></i> Calc</button>
+      <button class="btn-app" (click)="launchApp('calc')"><i class="fas fa-calculator"></i> Calculator</button>
       <button class="btn-app" (click)="launchApp('explorer')"><i class="fas fa-folder-open"></i> Explorer</button>
     </div>
   </div>

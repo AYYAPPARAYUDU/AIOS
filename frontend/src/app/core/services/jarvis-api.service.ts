@@ -21,6 +21,10 @@ export class JarvisApiService {
     return this.http.get<SystemTelemetry>(`${this.baseUrl}/api/system/telemetry`);
   }
 
+  getSystemState(): Observable<{ volume: number; muted: boolean; brightness: number }> {
+    return this.http.get<{ volume: number; muted: boolean; brightness: number }>(`${this.baseUrl}/api/system/actions/state`);
+  }
+
   getProcesses(limit = 25): Observable<{ processes: ProcessItem[] }> {
     return this.http.get<{ processes: ProcessItem[] }>(`${this.baseUrl}/api/system/processes?limit=${limit}`);
   }
@@ -89,8 +93,12 @@ export class JarvisApiService {
   }
 
   // Multi-Agent Swarm
-  chatWithJarvis(message: string, targetAgent = 'supervisor', conversationId = 'main_session'): Observable<any> {
+  chatWithAbhi(message: string, targetAgent = 'abhi', conversationId = 'main_session'): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/api/agents/chat`, { message, target_agent: targetAgent, conversation_id: conversationId });
+  }
+
+  chatWithJarvis(message: string, targetAgent = 'abhi', conversationId = 'main_session'): Observable<any> {
+    return this.chatWithAbhi(message, targetAgent, conversationId);
   }
 
   dispatchAgent(agentId: string, instruction: string, conversationId = 'main_session'): Observable<any> {

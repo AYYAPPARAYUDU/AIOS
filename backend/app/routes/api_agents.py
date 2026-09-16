@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/agents", tags=["Multi-Agent System & LLM"])
 
 class ChatRequest(BaseModel):
     message: str
-    target_agent: Optional[str] = "supervisor"
+    target_agent: Optional[str] = "abhi"
     conversation_id: Optional[str] = "main_session"
     model: Optional[str] = None
 
