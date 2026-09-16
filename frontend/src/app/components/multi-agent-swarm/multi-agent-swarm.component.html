@@ -1,0 +1,27 @@
+<div class="agent-swarm-panel">
+  <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); margin-bottom:8px; letter-spacing:1px; display:flex; justify-content:space-between; align-items:center;">
+    <span><i class="fas fa-users-cog"></i> MULTI-AGENT SWARM</span>
+    <span style="font-size:10px; color:var(--text-dim);">CLICK TO SELECT</span>
+  </div>
+
+  <div class="agent-list">
+    <div 
+      *ngFor="let a of agents" 
+      class="agent-card" 
+      [class.selected]="selectedAgentId === a.id"
+      (click)="selectAgent(a.id)"
+    >
+      <div class="agent-card-header">
+        <div class="agent-name" [style.color]="a.avatar_color || '#fff'">
+          <i *ngIf="selectedAgentId === a.id" class="fas fa-check-circle" style="color:var(--neon-cyan); margin-right:4px;"></i>
+          {{ a.name }}
+        </div>
+        <div class="agent-status-tag" [ngClass]="a.status">{{ a.status | uppercase }}</div>
+      </div>
+      <div class="agent-role">{{ a.role }}</div>
+      <div *ngIf="a.capabilities" class="capabilities-list">
+        <span *ngFor="let cap of a.capabilities" class="cap-pill">{{ cap }}</span>
+      </div>
+    </div>
+  </div>
+</div>

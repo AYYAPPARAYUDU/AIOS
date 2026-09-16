@@ -1,0 +1,33 @@
+<div class="process-manager-container">
+  <div class="process-header">
+    <span style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan);">ACTIVE PROCESSES</span>
+    <button class="btn-cyber" style="padding:2px 8px; font-size:10px;" (click)="refresh()">
+      <i class="fas fa-sync"></i> REFRESH
+    </button>
+  </div>
+
+  <div class="process-table-scroll">
+    <table class="proc-table">
+      <thead>
+        <tr>
+          <th>PID</th>
+          <th>NAME</th>
+          <th style="text-align:right;">CPU%</th>
+          <th style="text-align:right;">MEM%</th>
+          <th style="text-align:center;">ACTION</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of processes">
+          <td>{{ p.pid }}</td>
+          <td class="proc-name" [title]="p.name">{{ p.name }}</td>
+          <td style="text-align:right; color:var(--neon-gold);">{{ p.cpu_percent }}%</td>
+          <td style="text-align:right;">{{ p.memory_percent }}%</td>
+          <td style="text-align:center;">
+            <button class="btn-cyber danger" style="padding:2px 6px; font-size:9px;" (click)="kill(p.pid)">KILL</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

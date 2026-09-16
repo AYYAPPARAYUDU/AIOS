@@ -1,0 +1,57 @@
+<div class="storage-vault-container">
+  <!-- Upload Dropzone -->
+  <div class="dropzone" (click)="fileInput.click()">
+    <i class="fas fa-cloud-arrow-up" style="font-size:18px; color:var(--neon-cyan); margin-bottom:4px;"></i>
+    <div>Click or drop file to upload to 50GB Pool</div>
+    <input #fileInput type="file" style="display:none;" (change)="onFileSelected($event)">
+  </div>
+
+  <div *ngIf="statusMessage" class="status-alert">
+    {{ statusMessage }}
+  </div>
+
+  <!-- Search Knowledge -->
+  <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); margin:6px 0;">
+    <i class="fas fa-search"></i> SEARCH LAPTOP KNOWLEDGE
+  </div>
+  <form class="search-form" (ngSubmit)="searchKnowledge()">
+    <input type="text" class="chat-input" [(ngModel)]="searchQuery" name="searchQuery" placeholder="Search indexed files...">
+    <button type="submit" class="btn-cyber"><i class="fas fa-search"></i></button>
+  </form>
+
+  <div *ngIf="searchResults.length > 0" class="search-results-list">
+    <div *ngFor="let r of searchResults" class="search-item">
+      <div class="search-name">{{ r.file_name }} ({{ r.category }})</div>
+      <div class="search-path">{{ r.file_path }}</div>
+      <div class="search-summary">{{ r.summary || 'Indexed document' }}</div>
+    </div>
+  </div>
+
+  <!-- Deep Indexer -->
+  <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); margin:8px 0 4px 0;">
+    <i class="fas fa-folder-plus"></i> DEEP DIRECTORY INDEXER
+  </div>
+  <form class="search-form" (ngSubmit)="indexDirectory()">
+    <input type="text" class="chat-input" [(ngModel)]="indexDirPath" name="indexDirPath" placeholder="Path (e.g. C:\Users\AYYAPPA RAYUDU\Documents)">
+    <button type="submit" class="btn-cyber">INDEX</button>
+  </form>
+
+  <!-- 50GB Pool File Explorer -->
+  <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); margin:8px 0 4px 0;">
+    <i class="fas fa-server"></i> 50GB POOL EXPLORER
+  </div>
+  <div class="file-list">
+    <div *ngIf="files.length === 0" style="color:var(--text-dim); font-size:11px; padding:6px;">
+      No files currently in 50GB storage pool.
+    </div>
+    <div *ngFor="let f of files" class="file-item">
+      <div>
+        <i class="fas" [ngClass]="f.is_directory ? 'fa-folder' : 'fa-file-code'" style="color:var(--neon-cyan); margin-right:6px;"></i>
+        <span>{{ f.name }}</span>
+      </div>
+      <div style="color:var(--text-dim); font-size:11px;">
+        {{ f.size_formatted }}
+      </div>
+    </div>
+  </div>
+</div>

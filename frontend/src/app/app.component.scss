@@ -1,0 +1,102 @@
+.jarvis-container {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  width: 100vw;
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 310px 1fr 340px;
+  gap: 8px;
+  height: calc(100vh - 116px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.center-column {
+  display: grid;
+  grid-template-rows: 250px 1fr;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.cyber-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-cyan);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.tabs-nav {
+  display: flex;
+  background: rgba(0, 240, 255, 0.05);
+  border-bottom: 1px solid var(--border-cyan);
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.active {
+    color: var(--neon-cyan);
+    background: rgba(0, 240, 255, 0.15);
+    border-bottom: 2px solid var(--neon-cyan);
+  }
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: none;
+  min-height: 0;
+
+  &.active {
+    display: block;
+  }
+}
+
+@media (max-width: 1200px) {
+  .workspace-grid {
+    grid-template-columns: 280px 1fr;
+  }
+  .workspace-grid > .cyber-panel {
+    grid-column: span 2;
+    height: 280px;
+  }
+}
+
+@media (max-width: 900px) {
+  .jarvis-container {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace-grid {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+  .center-column {
+    grid-template-rows: 240px 400px;
+  }
+}

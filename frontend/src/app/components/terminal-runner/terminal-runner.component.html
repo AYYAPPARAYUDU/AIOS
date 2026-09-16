@@ -1,0 +1,11 @@
+<div class="terminal-window">
+  <div class="terminal-output" #termScroll>
+    <div *ngFor="let line of terminalLines" [style.color]="line.isError ? 'var(--neon-red)' : '#a8d5ff'">
+      {{ line.text }}
+    </div>
+  </div>
+  <form class="terminal-input-row" (ngSubmit)="execute()">
+    <span>PS &gt;</span>
+    <input type="text" [(ngModel)]="commandInput" name="commandInput" placeholder="Get-Process, ipconfig, ls, Get-Service...">
+  </form>
+</div>

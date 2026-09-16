@@ -1,0 +1,37 @@
+<header class="hud-header">
+  <div class="brand">
+    <i class="fas fa-atom brand-icon"></i>
+    <div>
+      <div class="brand-title">J.A.R.V.I.S. AIOS</div>
+      <div class="brand-subtitle">LOCAL-FIRST MULTI-AGENT OPERATING SYSTEM</div>
+    </div>
+  </div>
+
+  <div class="hud-status-bar">
+    <div class="status-badge" [ngClass]="isConnected ? 'online' : 'busy'">
+      <div class="indicator"></div>
+      <span>LLM: OLLAMA (QWEN3:8B)</span>
+    </div>
+    <div class="status-badge online">
+      <i class="fas fa-database" style="color:var(--neon-cyan);"></i>
+      <span>VAULT: 50GB LOCAL DB</span>
+    </div>
+    <div class="status-badge online">
+      <i class="fas fa-network-wired" style="color:var(--neon-green);"></i>
+      <span>{{ netSpeedText }}</span>
+    </div>
+  </div>
+
+  <div class="hud-actions">
+    <button class="btn-cyber" [class.active]="audioService.speechEnabled" (click)="toggleVoice()">
+      <i class="fas" [ngClass]="audioService.speechEnabled ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
+      <span>VOICE: {{ audioService.speechEnabled ? 'ON' : 'OFF' }}</span>
+    </button>
+    <button class="btn-cyber" (click)="takeScreenshot()">
+      <i class="fas fa-camera"></i> CAPTURE
+    </button>
+    <button class="btn-cyber danger" (click)="lockWorkstation()">
+      <i class="fas fa-lock"></i> LOCK OS
+    </button>
+  </div>
+</header>

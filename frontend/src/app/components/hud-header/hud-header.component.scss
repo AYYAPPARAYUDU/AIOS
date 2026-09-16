@@ -1,0 +1,128 @@
+.hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-cyan);
+  border-radius: 8px;
+  padding: 8px 16px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.15);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  font-size: 24px;
+  color: var(--neon-cyan);
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.brand-title {
+  font-family: var(--font-hud);
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.brand-subtitle {
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--neon-cyan);
+  letter-spacing: 1px;
+}
+
+.hud-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-data);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+  color: var(--text-main);
+  font-size: 12px;
+}
+
+.status-badge.online .indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+}
+
+.status-badge.busy .indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-gold);
+  box-shadow: 0 0 8px var(--neon-gold);
+}
+
+.hud-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-cyber {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 12px var(--neon-cyan);
+  }
+
+  &.active {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 10px var(--neon-cyan);
+  }
+
+  &.danger {
+    border-color: var(--neon-red);
+    color: var(--neon-red);
+    background: rgba(255, 51, 102, 0.15);
+
+    &:hover {
+      background: var(--neon-red);
+      color: #fff;
+      box-shadow: 0 0 12px var(--neon-red);
+    }
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 4px var(--neon-cyan)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 12px var(--neon-cyan)); }
+}

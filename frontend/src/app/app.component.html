@@ -1,0 +1,55 @@
+<div class="jarvis-container">
+  <!-- Top HUD Header -->
+  <app-hud-header
+    [isConnected]="isConnected"
+    [netSpeedText]="netSpeedText"
+    (screenshotCaptured)="onScreenshotCaptured($event)"
+  ></app-hud-header>
+
+  <!-- Mobile View Switcher (Visible on < 992px) -->
+  <div *ngIf="isMobile" class="mobile-nav-bar">
+    <button class="mob-btn" [class.active]="mobileView === 'diagnostics'" (click)="setMobileView('diagnostics')">
+      <i class="fas fa-tachometer-alt"></i> OS STATUS
+    </button>
+    <button class="mob-btn" [class.active]="mobileView === 'chat'" (click)="setMobileView('chat')">
+      <i class="fas fa-comments"></i> JARVIS CORE
+    </button>
+    <button class="mob-btn" [class.active]="mobileView === 'swarm'" (click)="setMobileView('swarm')">
+      <i class="fas fa-users-cog"></i> SWARM & VAULT
+    </button>
+  </div>
+
+  <!-- Main Workspace Grid -->
+  <main class="workspace-grid" [class.mobile-mode]="isMobile">
+    <!-- LEFT PANEL: System Diagnostics & OS Controls -->
+    <div class="col-panel left-col" [class.mob-hidden]="isMobile && mobileView !== 'diagnostics'">
+      <app-system-diagnostics
+        [telemetry]="telemetry"
+        (appLaunched)="onAppLaunched($event)"
+      ></app-system-diagnostics>
+    </div>
+
+    <!-- CENTER PANEL: 3D Hologram Avatar & Chat HUD -->
+    <section class="center-column" [class.mob-hidden]="isMobile && mobileView !== 'chat'">
+      <div class="hologram-wrapper">
+        <app-hologram-viewport></app-hologram-viewport>
+      </div>
+      <div class="chat-wrapper">
+        <app-chat-console
+          [selectedAgent]="selectedAgentId"
+          (agentResponse)="onAgentResponse($event)"
+        ></app-chat-console>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Multi-Agents, 50GB Knowledge, Processes & Shell -->
+    <section class="cyber-panel right-col" [class.mob-hidden]="isMobile && mobileView !== 'swarm'">
+      <div class="tabs-nav">
+        <button class="tab-btn" [class.active]="activeTab === 'agents'" (click)="setTab('agents')">
+          <i class="fas fa-network-wired"></i> AGENTS
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'storage'" (click)="setTab('storage')">
+          <i class="fas fa-database"></i> 50GB VAULT
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'processes'" (click)="setTab('processes')">
+          <i class="fas fa-tasks"></i> 

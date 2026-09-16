@@ -1,0 +1,42 @@
+.terminal-window {
+  background: #02050b;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 6px;
+  height: 250px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.terminal-output {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+  color: #a8d5ff;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+
+.terminal-input-row {
+  display: flex;
+  border-top: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 4px 8px;
+  background: rgba(0, 240, 255, 0.05);
+  align-items: center;
+  gap: 6px;
+
+  span {
+    color: var(--neon-green);
+  }
+
+  input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+  }
+}

@@ -1,0 +1,29 @@
+<div class="chat-container">
+  <div class="panel-header">
+    <span><i class="fas fa-comments"></i> JARVIS Command Terminal</span>
+    <span style="color:var(--text-dim); font-size:11px;">ACTIVE AGENT: [{{ selectedAgent | uppercase }}]</span>
+  </div>
+
+  <div class="chat-messages" #chatScroll>
+    <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="msg.role === 'user' ? 'user' : 'jarvis'">
+      <div class="bubble-sender">{{ msg.sender | uppercase }}</div>
+      <div>{{ msg.content }}</div>
+
+      <div *ngIf="msg.imagePreview" style="margin-top:8px;">
+        <img [src]="msg.imagePreview" style="max-width:100%; border-radius:4px; border:1px solid var(--neon-cyan);" />
+      </div>
+
+      <div *ngIf="msg.toolCall" class="tool-chip">
+        <i class="fas fa-microchip"></i> Executed: {{ msg.toolCall.tool }}
+      </div>
+    </div>
+  </div>
+
+  <form class="chat-input-bar" (ngSubmit)="sendMessage()">
+    <button type="button" class="btn-mic" [class.recording]="audioService.isListening" (click)="toggleMic()" title="Voice Input">
+      <i class="fas fa-microphone"></i>
+    </button>
+    <input type="text" class="chat-input" [(ngModel)]="inputText" name="inputText" placeholder="Ask Jarvis or give an OS command (e.g. 'Set volume 50', 'Open VS Code', 'Index my Documents')..." autocomplete="off">
+    <button type="submit" class="btn-cyber"><i class="fas fa-paper-plane"></i> SEND</button>
+  </form>
+</div>

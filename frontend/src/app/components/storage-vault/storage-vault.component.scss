@@ -1,0 +1,129 @@
+.storage-vault-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dropzone {
+  border: 1px dashed var(--border-cyan);
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+  background: rgba(0, 240, 255, 0.03);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-data);
+  font-size: 12px;
+  color: var(--text-dim);
+
+  &:hover {
+    background: rgba(0, 240, 255, 0.08);
+    border-color: var(--neon-cyan);
+    color: #fff;
+  }
+}
+
+.status-alert {
+  background: rgba(0, 255, 157, 0.1);
+  border: 1px solid var(--neon-green);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--neon-green);
+}
+
+.search-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.chat-input {
+  flex: 1;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid var(--border-cyan);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
+  outline: none;
+
+  &:focus {
+    border-color: var(--neon-cyan);
+  }
+}
+
+.search-results-list {
+  max-height: 110px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.search-item {
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.search-name {
+  color: var(--neon-cyan);
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.search-path {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.search-summary {
+  font-size: 11px;
+  color: #cde3f8;
+  margin-top: 2px;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(0, 240, 255, 0.04);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+  border-radius: 4px;
+  font-family: var(--font-data);
+  font-size: 12px;
+
+  &:hover {
+    background: rgba(0, 240, 255, 0.1);
+  }
+}
+
+.btn-cyber {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-family: var(--font-hud);
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--neon-cyan);
+    color: #000;
+  }
+}
