@@ -22,6 +22,15 @@ class ToolExecuteRequest(BaseModel):
     tool: str
     parameters: dict[str, Any]
 
+class ContactRequest(BaseModel):
+    name: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+
+class SessionActionRequest(BaseModel):
+    conversation_id: Optional[str] = "main_session"
+
 @router.get("/status")
 async def get_agents_status():
     return {
@@ -67,3 +76,30 @@ async def get_agent_logs():
 @router.get("/memories")
 async def list_memories(category: Optional[str] = None):
     return {"memories": db.list_memories(category=category)}
+
+# Contacts Directory Endpoints (WhatsApp, Email & Phonebook Memory)
+@router.get("/contacts")
+async def list_contacts():
+    return {"contacts": db.list_contacts()}
+
+@router.post("/contacts")
+async def save_contact(req: ContactRequest):
+    res = db.save_contact(name=req.name, phone=req.phone, email=req.email, notes=req.notes)
+    return res
+
+@router.delete("/contacts/{name}")
+async def delete_contact(name: str):
+    success = db.delete_contact(name)
+    return {"deleted": success, "contact": name}
+
+# Session Management (Export to 50GB Vault vs Clear)
+@router.post("/session/export")
+async def export_session(req: SessionActionRequest):
+    res = db.export_session_to_vault(req.conversation_id or "main_session")
+    return res
+
+@router.delete("/session/clear")
+async def clear_session(conversation_id: str = "main_session"):
+    success = db.clear_conversation(conversation_id)
+    return {"status": "cleared", "conversation_id": conversation_id, "success": success}
+

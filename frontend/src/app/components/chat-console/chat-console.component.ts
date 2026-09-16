@@ -26,6 +26,7 @@ export class ChatConsoleComponent implements AfterViewChecked {
     }
   ];
   public inputText: string = '';
+  public sessionStatusMessage: string = '';
   private subs: Subscription[] = [];
 
   constructor(
@@ -52,6 +53,49 @@ export class ChatConsoleComponent implements AfterViewChecked {
     }
   }
 
+  saveSessionToVault(): void {
+    this.audioService.playSciFiTone('beep');
+    this.apiService.exportSession('main_session').subscribe({
+      next: (res) => {
+        if (res.status === 'success') {
+          this.sessionStatusMessage = `Session archived to 50GB Vault: ${res.file}`;
+          this.audioService.speak('Current session transcript has been safely archived in the Saraswati Knowledge Vault.');
+        } else {
+          this.sessionStatusMessage = 'No messages to archive yet.';
+        }
+        setTimeout(() => this.sessionStatusMessage = '', 5000);
+      },
+      error: (err) => {
+        this.sessionStatusMessage = `Error saving session: ${err.message}`;
+        setTimeout(() => this.sessionStatusMessage = '', 5000);
+      }
+    });
+  }
+
+  clearSessionMemory(): void {
+    if (confirm('Clear current session memory?')) {
+      this.audioService.playSciFiTone('beep');
+      this.apiService.clearSession('main_session').subscribe({
+        next: () => {
+          this.messages = [
+            {
+              sender: 'ABHI',
+              role: 'assistant',
+              content: 'Memory cleared for new session. All divine deities stand ready for your command.'
+            }
+          ];
+          this.sessionStatusMessage = 'Session memory cleared successfully.';
+          setTimeout(() => this.sessionStatusMessage = '', 4000);
+        }
+      });
+    }
+  }
+
+  sendQuickPrompt(promptText: string): void {
+    this.inputText = promptText;
+    this.sendMessage();
+  }
+
   sendMessage(): void {
     const text = this.inputText.trim();
     if (!text) return;
@@ -61,20 +105,24 @@ export class ChatConsoleComponent implements AfterViewChecked {
     this.inputText = '';
     this.audioService.avatarState$.next('thinking');
 
+
     this.apiService.chatWithAbhi(text, this.selectedAgent).subscribe({
       next: (res) => {
         this.audioService.avatarState$.next('idle');
         const answer = res.response || 'Divine task completed with absolute precision.';
+        const allTools = res.tool_calls || (res.tool_call ? [res.tool_call] : []);
         this.messages.push({
           sender: 'ABHI',
           role: 'assistant',
           content: answer,
-          toolCall: res.tool_call
+          toolCall: res.tool_call,
+          toolCalls: allTools
         });
         this.audioService.speak(answer);
         this.agentResponse.emit(res);
       },
       error: (err) => {
+
         this.audioService.avatarState$.next('idle');
         this.audioService.playSciFiTone('error');
         this.messages.push({

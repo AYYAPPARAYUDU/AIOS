@@ -32,10 +32,19 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   private animFrameId: number = 0;
   private subs: Subscription[] = [];
 
+  private resizeObserver?: ResizeObserver;
+
   constructor(public audioService: JarvisAudioService) {}
 
   ngAfterViewInit(): void {
     this.initThree();
+
+    if (this.canvasRef && this.canvasRef.nativeElement) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.onWindowResize();
+      });
+      this.resizeObserver.observe(this.canvasRef.nativeElement);
+    }
 
     this.subs.push(
       this.audioService.avatarState$.subscribe(st => this.setHologramState(st)),
@@ -44,6 +53,9 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
     cancelAnimationFrame(this.animFrameId);
     this.subs.forEach(s => s.unsubscribe());
     if (this.renderer) this.renderer.dispose();
@@ -53,12 +65,13 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   onWindowResize(): void {
     if (!this.canvasRef || !this.renderer || !this.camera) return;
     const canvas = this.canvasRef.nativeElement;
-    const width = canvas.clientWidth || 300;
-    const height = canvas.clientHeight || 240;
+    const width = canvas.parentElement?.clientWidth || canvas.clientWidth || 300;
+    const height = canvas.parentElement?.clientHeight || canvas.clientHeight || 240;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
   }
+
 
   @HostListener('window:mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {

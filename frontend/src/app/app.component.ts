@@ -8,6 +8,7 @@ import { MultiAgentSwarmComponent } from './components/multi-agent-swarm/multi-a
 import { StorageVaultComponent } from './components/storage-vault/storage-vault.component';
 import { ProcessManagerComponent } from './components/process-manager/process-manager.component';
 import { TerminalRunnerComponent } from './components/terminal-runner/terminal-runner.component';
+import { ContactsManagerComponent } from './components/contacts-manager/contacts-manager.component';
 import { HudFooterComponent } from './shared/hud-footer/hud-footer.component';
 import { JarvisWebsocketService } from './core/services/jarvis-websocket.service';
 import { JarvisApiService } from './core/services/jarvis-api.service';
@@ -26,6 +27,7 @@ import { AgentModel } from './core/models/agent.model';
     ChatConsoleComponent,
     MultiAgentSwarmComponent,
     StorageVaultComponent,
+    ContactsManagerComponent,
     ProcessManagerComponent,
     TerminalRunnerComponent,
     HudFooterComponent
@@ -93,6 +95,7 @@ export class AppComponent implements OnInit {
     this.audioService.playSciFiTone('beep');
     this.mobileView = view;
   }
+
 
   onAgentSelected(agentId: string): void {
     this.selectedAgentId = agentId;

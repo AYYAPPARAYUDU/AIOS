@@ -39,8 +39,9 @@ Tool Call JSON Format (when executing an action):
 ```
 
 Available Tools:
-- `launch_app`: {"app_name": "whatsapp"|"chrome"|"vscode"|"youtube"|"github"|"notepad"|"calc"|"terminal"|"explorer"|"spotify"|"edge"|"telegram"|"discord"|"netflix"}
-- `open_whatsapp`: {"phone": "optional phone number", "message": "optional message"}
+- `launch_app`: {"app_name": "whatsapp"|"chrome"|"vscode"|"youtube"|"github"|"notepad"|"calc"|"terminal"|"explorer"|"spotify"|"edge"|"telegram"|"discord"|"netflix"|"gmail"|"chatgpt"}
+- `open_whatsapp`: {"phone": "phone number or contact name", "message": "message text"}
+- `save_contact`: {"name": "contact name", "phone": "phone number", "email": "optional email", "notes": "optional notes"}
 - `fetch_url`: {"url": "https://..."}
 - `search_web`: {"query": "query to search online"}
 - `open_url`: {"url": "https://..."}
@@ -57,6 +58,7 @@ Available Tools:
 - `get_system_stats`: {}
 - `list_processes`: {}
 - `kill_process`: {"pid": 1234}
+
 """
 
 class MultiAgentOrchestrator:
@@ -195,6 +197,7 @@ class MultiAgentOrchestrator:
             "purge_ram": "hanuman",
             "execute_macro": "hanuman",
             "search_files": "saraswati",
+            "save_contact": "saraswati",
             "get_storage_stats": "saraswati",
             "get_system_stats": "lakshmi",
             "list_processes": "lakshmi"
@@ -215,8 +218,24 @@ class MultiAgentOrchestrator:
             elif tool == "open_whatsapp":
                 phone = params.get("phone")
                 msg = params.get("message") or params.get("text")
+                
+                # Check if phone is a contact name (e.g. "dheenu") and resolve from SQLite memory
+                if phone and not re.match(r'^\+?\d+$', str(phone).strip()):
+                    contact_entry = db.get_contact(str(phone))
+                    if contact_entry and contact_entry.get("phone"):
+                        phone = contact_entry["phone"]
+                        
                 res = actions.open_whatsapp(phone, msg)
-                self.log_agent_activity("indra", "Open WhatsApp", json.dumps(res))
+                self.log_agent_activity("indra", f"Open WhatsApp ({phone or 'Direct'})", json.dumps(res))
+                return res
+
+            elif tool == "save_contact":
+                name = params.get("name", "").strip()
+                phone = params.get("phone")
+                email = params.get("email")
+                notes = params.get("notes")
+                res = db.save_contact(name=name, phone=phone, email=email, notes=notes)
+                self.log_agent_activity("saraswati", f"Saved Contact: {name}", f"Phone: {phone}")
                 return res
 
             elif tool == "fetch_url":
@@ -230,6 +249,7 @@ class MultiAgentOrchestrator:
                 res = terminal_executor.execute_command(cmd, shell_type="powershell", cwd=params.get("cwd"))
                 self.log_agent_activity("indra", f"PowerShell Command: {cmd}", json.dumps(res))
                 return res
+
                 
             elif tool == "set_volume":
                 if "delta" in params:
@@ -393,13 +413,22 @@ class MultiAgentOrchestrator:
             
         else:
             # ReAct Autonomous Multi-Turn Goal Loop via GPU LLM (up to 5 iterative steps)
-            past_msgs = db.get_messages(conversation_id, limit=6)
+            past_msgs = db.get_messages(conversation_id, limit=25)
             formatted_history = []
             for m in past_msgs:
                 formatted_history.append({"role": m["role"], "content": m["content"]})
 
+            # Retrieve active contacts for real-time memory grounding
+            all_contacts = db.list_contacts()
+            contacts_summary = ", ".join([f"{c['name']} (Phone: {c.get('phone') or 'Not set'})" for c in all_contacts]) if all_contacts else "No contacts saved yet"
+
             agent_details = self.active_agents.get(selected_agent, self.active_agents["abhi"])
-            system_msg = f"{ABHI_SUPERVISOR_PROMPT}\n\n[ACTIVE DEITY FOCUS]: {agent_details['name']} ({agent_details['role']})\n[USER BIOMETRIC CONTEXT]: Mood: {user_emotion['mood']} | Stress: {user_emotion['stress_level']}% | Focus: {user_emotion['focus_score']}%."
+            system_msg = (
+                f"{ABHI_SUPERVISOR_PROMPT}\n\n"
+                f"[SAVED CONTACTS DIRECTORY]: {contacts_summary}\n"
+                f"[ACTIVE DEITY FOCUS]: {agent_details['name']} ({agent_details['role']})\n"
+                f"[USER BIOMETRIC CONTEXT]: Mood: {user_emotion['mood']} | Stress: {user_emotion['stress_level']}% | Focus: {user_emotion['focus_score']}%."
+            )
 
             messages = [{"role": "system", "content": system_msg}]
             messages.extend(formatted_history)
@@ -509,14 +538,51 @@ class MultiAgentOrchestrator:
         """Matches a single atomic intent with zero ambiguity."""
         ql = ql_in.lower().strip()
         
-        # WhatsApp
+        # Save Contact: e.g. "save contact dheenu phone 9876543210" or "save contact dheenu 9876543210"
+        m_save = re.search(r'(?:save\s+contact\s+|save\s+phone\s+for\s+|save\s+)([a-zA-Z0-9_\s]+?)\s+(?:phone|number|num)?\s*[:=]?\s*(\+?\d{7,15})', ql)
+        if m_save:
+            c_name = m_save.group(1).replace("contact", "").strip()
+            c_phone = m_save.group(2).strip()
+            return {"tool": "save_contact", "params": {"name": c_name, "phone": c_phone}}
+
+        # WhatsApp Message with flexible natural language patterns:
+        # e.g. "send hi to dheenu in whatsapp", "tell dheenu hi in whatsapp", "whatsapp dheenu hi", "message dheenu on whatsapp: hi"
+        m_wa1 = re.search(r'(?:send|tell|message)\s+(.+?)\s+to\s+([a-zA-Z0-9_]+)\s+(?:in|on|via)?\s*whatsapp', ql)
+        if m_wa1:
+            msg = m_wa1.group(1).strip()
+            person = m_wa1.group(2).strip()
+            return {"tool": "open_whatsapp", "params": {"phone": person, "message": msg}}
+
+        m_wa2 = re.search(r'(?:send|tell|message)\s+([a-zA-Z0-9_]+)\s+(?:saying|that|:\s*)?(.+?)\s+(?:in|on|via)?\s*whatsapp', ql)
+        if m_wa2:
+            person = m_wa2.group(1).strip()
+            msg = m_wa2.group(2).strip()
+            return {"tool": "open_whatsapp", "params": {"phone": person, "message": msg}}
+
+        m_wa3 = re.search(r'(?:whatsapp\s+([a-zA-Z0-9_]+)\s+(?:saying\s+|:\s*)?(.+))', ql)
+        if m_wa3 and "web" not in ql:
+            person = m_wa3.group(1).strip()
+            msg = m_wa3.group(2).strip()
+            return {"tool": "open_whatsapp", "params": {"phone": person, "message": msg}}
+
         if "whatsapp" in ql:
-            msg_match = re.search(r'(?:send\s+whatsapp\s+message\s+(?:to\s+)?([^\s]+)?\s+(?:saying\s+|that\s+|:\s*)(.+))', ql)
-            if msg_match:
-                return {"tool": "open_whatsapp", "params": {"phone": msg_match.group(1), "message": msg_match.group(2)}}
             return {"tool": "open_whatsapp", "params": {}}
 
-        # Web Scraping / Fetch
+        # YouTube queries: e.g. "play lofi on youtube", "search youtube for ai tutorials", "youtube python music"
+        m_yt = re.search(r'(?:search\s+youtube\s+for\s+|play\s+(.+?)\s+on\s+youtube|play\s+|youtube\s+search\s+|youtube\s+)(.+)', ql)
+        if m_yt:
+            query = (m_yt.group(1) or m_yt.group(2)).replace("on youtube", "").strip()
+            if query and query not in ["app", "website", "online", "open"]:
+                return {"tool": "launch_app", "params": {"app_name": "youtube", "arguments": query}}
+
+        # GitHub queries: e.g. "search github for fastchat", "github langchain"
+        m_gh = re.search(r'(?:search\s+github\s+for\s+|github\s+search\s+|github\s+)(.+)', ql)
+        if m_gh:
+            query = m_gh.group(1).strip()
+            if query and query not in ["app", "website", "online", "open"]:
+                return {"tool": "launch_app", "params": {"app_name": "github", "arguments": query}}
+
+        # Web Scraping / Fetch URL
         if ql.startswith("fetch ") or ql.startswith("scrape ") or ql.startswith("read website ") or "fetch details from" in ql:
             url_match = re.search(r'(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?)', ql)
             if url_match:
@@ -584,7 +650,7 @@ class MultiAgentOrchestrator:
             "telegram": ["telegram"],
             "discord": ["discord"],
             "netflix": ["netflix"],
-            "gmail": ["gmail", "email", "mail"],
+            "gmail": ["gmail", "email", "mail", "emails"],
             "chatgpt": ["chatgpt", "chat gpt"]
         }
         for app_name, aliases in app_keywords.items():
@@ -604,11 +670,13 @@ class MultiAgentOrchestrator:
                 return {"tool": "search_files", "params": {"query": query}}
 
         # Web Search
-        if ql.startswith("search web for ") or ql.startswith("google ") or ql.startswith("web search ") or ql.startswith("search online for "):
-            query = ql.replace("search web for ", "").replace("google ", "").replace("web search ", "").replace("search online for ", "").strip()
+        if ql.startswith("search web for ") or ql.startswith("search for ") or ql.startswith("google ") or ql.startswith("web search ") or ql.startswith("search online for "):
+            query = re.sub(r'^(search web for|search for|google|web search|search online for)\s+', '', ql).strip()
             if query:
                 return {"tool": "search_web", "params": {"query": query}}
 
         return None
+
+
 
 agent_orchestrator = MultiAgentOrchestrator()

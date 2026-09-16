@@ -1,11 +1,12 @@
 .abhi-container {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100vw;
   padding: 8px 12px;
   gap: 8px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .mobile-nav-bar {
@@ -46,14 +47,14 @@
   display: grid;
   grid-template-columns: 320px 1fr 350px;
   gap: 8px;
-  height: calc(100vh - 116px);
+  flex: 1;
   min-height: 0;
   overflow: hidden;
 
   &.mobile-mode {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 160px);
+    height: 100%;
   }
 }
 
@@ -138,16 +139,25 @@
   display: none !important;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1280px) {
+/* Responsive Breakpoints */
+@media (max-width: 1400px) {
   .workspace-grid:not(.mobile-mode) {
-    grid-template-columns: 290px 1fr 310px;
+    grid-template-columns: 290px 1fr 320px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .workspace-grid:not(.mobile-mode) {
+    grid-template-columns: 260px 1fr 290px;
   }
 }
 
 @media (max-width: 992px) {
   .abhi-container {
     height: 100vh;
+  }
+  .workspace-grid {
+    grid-template-columns: 1fr;
   }
   .center-column {
     grid-template-rows: 200px 1fr;

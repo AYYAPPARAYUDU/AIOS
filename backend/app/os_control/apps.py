@@ -70,6 +70,24 @@ APP_PATHS: dict[str, list[str]] = {
     "netflix": ["https://www.netflix.com"]
 }
 
+def _open_url_robust(url: str) -> bool:
+    """Robustly opens a web URL using Windows startfile with webbrowser and cmd fallbacks."""
+    if not url.startswith("http://") and not url.startswith("https://"):
+        url = "https://" + url
+    try:
+        os.startfile(url)
+        return True
+    except Exception:
+        try:
+            webbrowser.open(url)
+            return True
+        except Exception:
+            try:
+                subprocess.Popen(f'start "" "{url}"', shell=True)
+                return True
+            except Exception:
+                return False
+
 class AppManager:
     @staticmethod
     def launch_app(app_name: str, arguments: Optional[str] = None) -> dict[str, Any]:
@@ -78,9 +96,28 @@ class AppManager:
 
         # If it's a direct web URL or domain
         if clean_key.startswith("http://") or clean_key.startswith("https://"):
-            webbrowser.open(app_name)
+            _open_url_robust(app_name)
             db.log_audit("APP_LAUNCH", f"Open Web URL: {app_name}", "AppManager", "SUCCESS")
             return {"status": "success", "app": app_name, "type": "web_url"}
+
+        import urllib.parse
+        if clean_key == "youtube":
+            yt_url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(arguments)}" if arguments else "https://www.youtube.com"
+            _open_url_robust(yt_url)
+            db.log_audit("APP_LAUNCH", f"YouTube Launch: {arguments or 'Home'}", "AppManager", "SUCCESS")
+            return {"status": "success", "app": "youtube", "target": yt_url, "query": arguments}
+
+        if clean_key == "github":
+            gh_url = f"https://github.com/search?q={urllib.parse.quote_plus(arguments)}" if arguments else "https://github.com"
+            _open_url_robust(gh_url)
+            db.log_audit("APP_LAUNCH", f"GitHub Launch: {arguments or 'Home'}", "AppManager", "SUCCESS")
+            return {"status": "success", "app": "github", "target": gh_url, "query": arguments}
+
+        if clean_key in ["google", "web", "browser"] and arguments:
+            g_url = f"https://www.google.com/search?q={urllib.parse.quote_plus(arguments)}"
+            _open_url_robust(g_url)
+            db.log_audit("APP_LAUNCH", f"Google Search: {arguments}", "AppManager", "SUCCESS")
+            return {"status": "success", "app": "google", "target": g_url, "query": arguments}
 
         candidates = APP_PATHS.get(clean_key, [app_name])
         launched = False
@@ -90,7 +127,7 @@ class AppManager:
         # Method 1: Check known absolute paths or URI schemes
         for candidate in candidates:
             if candidate.startswith("http://") or candidate.startswith("https://"):
-                webbrowser.open(candidate)
+                _open_url_robust(candidate)
                 launched = True
                 launched_cmd = candidate
                 break
@@ -108,6 +145,16 @@ class AppManager:
             if os.path.isabs(candidate) and os.path.exists(candidate):
                 try:
                     cmd = [candidate]
+                    if arguments:
+                        cmd.extend(arguments.split())
+                    subprocess.Popen(cmd)
+                    launched = True
+                    launched_cmd = candidate
+                    break
+                except Exception as e:
+                    error_msg = str(e)
+                    continue
+
                     if arguments:
                         cmd.extend(arguments.split())
                     subprocess.Popen(cmd)

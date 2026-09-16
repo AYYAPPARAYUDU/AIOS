@@ -108,4 +108,28 @@ export class JarvisApiService {
   getAgentStatus(): Observable<{ agents: AgentModel[]; recent_logs: AgentLog[]; llm_health: any }> {
     return this.http.get<{ agents: AgentModel[]; recent_logs: AgentLog[]; llm_health: any }>(`${this.baseUrl}/api/agents/status`);
   }
+
+  // Contacts Directory & Memory
+
+  listContacts(): Observable<{ contacts: any[] }> {
+    return this.http.get<{ contacts: any[] }>(`${this.baseUrl}/api/agents/contacts`);
+  }
+
+  saveContact(name: string, phone?: string, email?: string, notes?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/agents/contacts`, { name, phone, email, notes });
+  }
+
+  deleteContact(name: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/api/agents/contacts/${encodeURIComponent(name)}`);
+  }
+
+  // Session Vault Management
+  exportSession(conversationId = 'main_session'): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/agents/session/export`, { conversation_id: conversationId });
+  }
+
+  clearSession(conversationId = 'main_session'): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/api/agents/session/clear?conversation_id=${encodeURIComponent(conversationId)}`);
+  }
 }
+

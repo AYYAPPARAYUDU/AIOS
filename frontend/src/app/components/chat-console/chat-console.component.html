@@ -1,10 +1,24 @@
 <div class="chat-container">
   <div class="panel-header">
     <div class="panel-title">
-      <i class="fas fa-om" style="color:var(--neon-gold); margin-right:6px;"></i>
+      <i class="fas fa-om gold-icon"></i>
       <span>ABHI COGNITIVE SUTRADHAR</span>
+      <span class="unrestricted-pill"><i class="fas fa-unlock-alt"></i> UNRESTRICTED ACCESS</span>
     </div>
-    <span class="active-agent-badge">INVOKED DEITY: [{{ selectedAgent | uppercase }}]</span>
+    
+    <div class="session-actions">
+      <button class="session-btn save" (click)="saveSessionToVault()" title="Archive transcript to 50GB local vault">
+        <i class="fas fa-save"></i> SAVE SESSION
+      </button>
+      <button class="session-btn clear" (click)="clearSessionMemory()" title="Purge session memory">
+        <i class="fas fa-trash-alt"></i> CLEAR
+      </button>
+      <span class="active-agent-badge">DEITY: [{{ selectedAgent | uppercase }}]</span>
+    </div>
+  </div>
+
+  <div class="status-alert" *ngIf="sessionStatusMessage">
+    <i class="fas fa-info-circle"></i> {{ sessionStatusMessage }}
   </div>
 
   <div class="chat-messages" #chatScroll>
@@ -19,11 +33,45 @@
         <img [src]="msg.imagePreview" style="max-width:100%; border-radius:6px; border:1px solid var(--neon-gold);" />
       </div>
 
-      <div *ngIf="msg.toolCall" class="tool-chip">
-        <i class="fas fa-bolt" style="color:var(--neon-gold);"></i> 
-        <span>Deity Action: <strong>{{ msg.toolCall.tool }}</strong></span>
+      <!-- Deity Swarm Multi-Agent Execution Trail -->
+      <div *ngIf="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls-trail">
+        <div class="trail-header">
+          <i class="fas fa-sitemap"></i> DEITY SWARM EXECUTION TRAIL ({{ msg.toolCalls.length }})
+        </div>
+        <div class="trail-list">
+          <div *ngFor="let tc of msg.toolCalls" class="tool-chip">
+            <i class="fas fa-bolt gold-bolt"></i> 
+            <span class="deity-badge">[{{ (tc.executed_by || 'DEITY') | uppercase }}]</span>
+            <span class="tool-action">{{ tc.tool }}</span>
+            <span *ngIf="tc.parameters?.phone" class="param-tag"><i class="fab fa-whatsapp text-green"></i> {{ tc.parameters.phone }}</span>
+            <span *ngIf="tc.parameters?.app_name" class="param-tag"><i class="fas fa-cube text-gold"></i> {{ tc.parameters.app_name }}</span>
+            <span *ngIf="tc.parameters?.query" class="param-tag"><i class="fas fa-search text-cyan"></i> {{ tc.parameters.query }}</span>
+            <span *ngIf="tc.parameters?.level !== undefined" class="param-tag"><i class="fas fa-sliders-h text-gold"></i> {{ tc.parameters.level }}%</span>
+            <span *ngIf="tc.parameters?.macro_name" class="param-tag"><i class="fas fa-magic text-cyan"></i> {{ tc.parameters.macro_name }}</span>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
+
+
+  <!-- Quick Command Chips -->
+  <div class="quick-chips">
+    <button class="chip" (click)="sendQuickPrompt('send hi to dheenu in whatsapp')">
+      <i class="fab fa-whatsapp"></i> Send Hi to Dheenu
+    </button>
+    <button class="chip" (click)="sendQuickPrompt('open youtube')">
+      <i class="fab fa-youtube"></i> Open YouTube
+    </button>
+    <button class="chip" (click)="sendQuickPrompt('open github')">
+      <i class="fab fa-github"></i> Open GitHub
+    </button>
+    <button class="chip" (click)="sendQuickPrompt('purge ram')">
+      <i class="fas fa-bolt"></i> Purge RAM
+    </button>
+    <button class="chip" (click)="sendQuickPrompt('fetch details from https://news.ycombinator.com')">
+      <i class="fas fa-globe"></i> Read Live Web
+    </button>
   </div>
 
   <form class="chat-input-bar" (ngSubmit)="sendMessage()">
@@ -35,9 +83,10 @@
       class="chat-input" 
       [(ngModel)]="inputText" 
       name="inputText" 
-      placeholder="Ask Abhi or command deities (e.g. 'Set volume 60', 'Launch VS Code', 'Purge RAM', 'Search Saraswati vault')..." 
+      placeholder="Ask Abhi or command deities (e.g. 'send hi to dheenu in whatsapp', 'open youtube', 'purge ram')..." 
       autocomplete="off"
     >
     <button type="submit" class="btn-cyber"><i class="fas fa-paper-plane"></i> TRANSMIT</button>
   </form>
 </div>
+
