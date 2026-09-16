@@ -103,4 +103,19 @@ export class AppComponent implements OnInit {
 
   onScreenshotCaptured(previewBase64: string): void {
     if (this.chatConsole) {
-      this.chatConsole.add
+      this.chatConsole.addSystemMessage('JARVIS', 'Display buffer captured and archived to database, sir.', previewBase64);
+    }
+  }
+
+  onAppLaunched(appName: string): void {
+    if (this.chatConsole) {
+      this.chatConsole.addSystemMessage('JARVIS', `Initiating ${appName.toUpperCase()}, sir.`);
+    }
+  }
+
+  onAgentResponse(res: any): void {
+    if (res.agents) {
+      this.agents = res.agents;
+    }
+  }
+}

@@ -52,4 +52,35 @@
           <i class="fas fa-database"></i> 50GB VAULT
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'processes'" (click)="setTab('processes')">
-          <i class="fas fa-tasks"></i> 
+          <i class="fas fa-tasks"></i> PROCESSES
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'terminal'" (click)="setTab('terminal')">
+          <i class="fas fa-terminal"></i> SHELL
+        </button>
+      </div>
+
+      <div class="tab-content" [class.active]="activeTab === 'agents'">
+        <app-multi-agent-swarm
+          [agents]="agents"
+          [selectedAgentId]="selectedAgentId"
+          (agentSelected)="onAgentSelected($event)"
+        ></app-multi-agent-swarm>
+      </div>
+
+      <div class="tab-content" [class.active]="activeTab === 'storage'">
+        <app-storage-vault></app-storage-vault>
+      </div>
+
+      <div class="tab-content" [class.active]="activeTab === 'processes'">
+        <app-process-manager></app-process-manager>
+      </div>
+
+      <div class="tab-content" [class.active]="activeTab === 'terminal'">
+        <app-terminal-runner></app-terminal-runner>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Status Bar -->
+  <app-hud-footer></app-hud-footer>
+</div>
