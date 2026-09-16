@@ -1,10 +1,44 @@
 <section class="cyber-panel">
   <div class="panel-header">
     <span><i class="fas fa-tachometer-alt"></i> System Diagnostics</span>
-    <span style="font-size:10px; color:var(--neon-green);">HOST TELEMETRY</span>
+    <span style="font-size:10px; color:var(--neon-green);">HOST & BIOMETRICS</span>
   </div>
 
   <div class="panel-body">
+    <!-- USER EMOTION & COGNITIVE BIOMETRICS CARD -->
+    <div class="biometrics-card" *ngIf="telemetry?.emotion">
+      <div class="bio-header">
+        <span><i class="fas fa-brain" style="color:var(--neon-gold);"></i> USER BIOMETRICS</span>
+        <span class="bio-mood-pill" [ngClass]="telemetry!.emotion!.mood">{{ telemetry!.emotion!.mood | uppercase }}</span>
+      </div>
+      <div class="bio-grid">
+        <div class="bio-stat">
+          <span class="bio-label">STRESS INDEX</span>
+          <div class="bio-val-row">
+            <span class="bio-num" [style.color]="telemetry!.emotion!.stress_level > 50 ? 'var(--neon-red)' : 'var(--neon-green)'">
+              {{ telemetry!.emotion!.stress_level }}%
+            </span>
+            <div class="bio-mini-progress">
+              <div class="bio-bar" [class.danger]="telemetry!.emotion!.stress_level > 50" [style.width.%]="telemetry!.emotion!.stress_level"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bio-stat">
+          <span class="bio-label">FOCUS SCORE</span>
+          <div class="bio-val-row">
+            <span class="bio-num" style="color:var(--neon-cyan);">{{ telemetry!.emotion!.focus_score }}%</span>
+            <div class="bio-mini-progress">
+              <div class="bio-bar cyan" [style.width.%]="telemetry!.emotion!.focus_score"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bio-recommendation">
+        <i class="fas fa-circle-info" style="color:var(--neon-cyan); margin-right:4px;"></i>
+        <span>{{ telemetry!.emotion!.recommendation }}</span>
+      </div>
+    </div>
+
     <!-- CPU & RAM Gauges -->
     <div class="metric-grid">
       <div class="metric-card">
@@ -41,20 +75,24 @@
       </div>
     </div>
 
-    <!-- Battery & Uptime -->
-    <div class="metric-grid">
-      <div class="metric-card">
-        <div class="metric-title">Battery Status</div>
-        <div class="metric-val" style="font-size:14px;">
-          {{ telemetry?.battery ? telemetry!.battery!.percent + '% ' + (telemetry!.battery!.power_plugged ? '(AC)' : '(BAT)') : 'AC Connected' }}
-        </div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-title">Host Link</div>
-        <div class="metric-val" style="font-size:12px;">
-          {{ telemetry?.os?.hostname || 'Win32 Host' }}
-        </div>
-      </div>
+    <!-- AI MACRO PROTOCOLS & RAM PURGE -->
+    <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-gold); letter-spacing:1px; margin-top:2px; display:flex; justify-content:space-between; align-items:center;">
+      <span><i class="fas fa-wand-magic-sparkles"></i> AI PROTOCOLS</span>
+      <button class="btn-mini-action" (click)="purgeRam()"><i class="fas fa-broom"></i> PURGE RAM</button>
+    </div>
+    <div class="macro-grid">
+      <button class="btn-macro" (click)="runMacro('dev_mode')">
+        <i class="fas fa-code"></i> Dev Mode
+      </button>
+      <button class="btn-macro" (click)="runMacro('focus_mode')">
+        <i class="fas fa-shield-halved"></i> Focus Mode
+      </button>
+      <button class="btn-macro" (click)="runMacro('night_mode')">
+        <i class="fas fa-moon"></i> Night Protocol
+      </button>
+    </div>
+    <div *ngIf="macroStatusText" class="macro-alert">
+      {{ macroStatusText }}
     </div>
 
     <!-- OS Sliders -->
@@ -70,7 +108,7 @@
     </div>
 
     <!-- App Launchers -->
-    <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); letter-spacing:1px; margin-top:4px;">
+    <div style="font-family:var(--font-hud); font-size:11px; color:var(--neon-cyan); letter-spacing:1px; margin-top:2px;">
       <i class="fas fa-rocket"></i> QUICK APP LAUNCH
     </div>
     <div class="app-grid">

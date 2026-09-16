@@ -1,3 +1,14 @@
+export interface UserEmotion {
+  mood: 'focused' | 'happy' | 'stressed' | 'tired' | 'excited' | 'neutral' | string;
+  stress_level: number;
+  focus_score: number;
+  sentiment: string;
+  heart_rate_sim: number;
+  energy_level: number;
+  last_updated: number;
+  recommendation: string;
+}
+
 export interface CpuMetric {
   percent: number;
   cores_logical: number;
@@ -63,6 +74,7 @@ export interface SystemTelemetry {
   disks: DiskMetric[];
   storage_pool_50gb: StoragePoolSummary;
   network: NetworkMetric;
+  emotion?: UserEmotion;
   gpu?: any[];
 }
 

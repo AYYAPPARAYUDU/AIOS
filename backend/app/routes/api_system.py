@@ -6,6 +6,8 @@ from backend.app.os_control.actions import actions
 from backend.app.os_control.apps import app_manager
 from backend.app.os_control.terminal import terminal_executor
 from backend.app.os_control.automation import automation_controller
+from backend.app.os_control.optimizer import system_optimizer
+from backend.app.core.emotion import emotion_engine
 from backend.app.storage.db import db
 
 router = APIRouter(prefix="/api/system", tags=["System & OS Controls"])
@@ -25,8 +27,8 @@ class AppLaunchRequest(BaseModel):
     app_name: str
     arguments: Optional[str] = None
 
-class FocusWindowRequest(BaseModel):
-    title_keyword: str
+class MacroRequest(BaseModel):
+    macro_name: str
 
 class TerminalExecuteRequest(BaseModel):
     command: str
@@ -34,29 +36,27 @@ class TerminalExecuteRequest(BaseModel):
     cwd: Optional[str] = None
     timeout: Optional[int] = 45
 
-class ScreenshotRequest(BaseModel):
-    save_name: Optional[str] = None
-
-class ClickRequest(BaseModel):
-    x: Optional[int] = None
-    y: Optional[int] = None
-    clicks: int = 1
-    button: str = "left"
-
-class TypeTextRequest(BaseModel):
-    text: str
-    interval: float = 0.02
-
-class HotkeyRequest(BaseModel):
-    keys: list[str]
-
 class ProcessKillRequest(BaseModel):
     pid: int
 
 # Endpoints
 @router.get("/telemetry")
 async def get_telemetry():
-    return get_system_telemetry()
+    tel = get_system_telemetry()
+    tel["emotion"] = emotion_engine.get_current_emotion()
+    return tel
+
+@router.get("/emotion")
+async def get_user_emotion():
+    return emotion_engine.get_current_emotion()
+
+@router.post("/macro")
+async def run_system_macro(req: MacroRequest):
+    return system_optimizer.execute_macro(req.macro_name)
+
+@router.post("/purge-ram")
+async def purge_system_ram():
+    return system_optimizer.purge_ram()
 
 @router.get("/processes")
 async def get_processes(limit: int = Query(default=30, le=100)):
@@ -88,21 +88,9 @@ async def handle_power(req: PowerRequest):
         return actions.lock_workstation()
     return actions.power_action(req.mode)
 
-@router.post("/actions/media")
-async def handle_media(action: str = Query(...)):
-    return actions.media_control(action)
-
 @router.post("/actions/app")
 async def launch_application(req: AppLaunchRequest):
     return app_manager.launch_app(req.app_name, req.arguments)
-
-@router.get("/windows")
-async def get_windows():
-    return {"windows": app_manager.get_open_windows()}
-
-@router.post("/windows/focus")
-async def focus_window(req: FocusWindowRequest):
-    return app_manager.focus_window(req.title_keyword)
 
 @router.post("/terminal/execute")
 async def execute_command(req: TerminalExecuteRequest):
@@ -114,24 +102,8 @@ async def execute_command(req: TerminalExecuteRequest):
     )
 
 @router.post("/automation/screenshot")
-async def take_screenshot(req: ScreenshotRequest):
-    return automation_controller.take_screenshot(req.save_name)
-
-@router.get("/automation/screen-info")
-async def get_screen_info():
-    return automation_controller.get_screen_info()
-
-@router.post("/automation/click")
-async def gui_click(req: ClickRequest):
-    return automation_controller.click(req.x, req.y, req.clicks, req.button)
-
-@router.post("/automation/type")
-async def gui_type(req: TypeTextRequest):
-    return automation_controller.type_text(req.text, req.interval)
-
-@router.post("/automation/hotkey")
-async def gui_hotkey(req: HotkeyRequest):
-    return automation_controller.press_hotkey(req.keys)
+async def take_screenshot():
+    return automation_controller.take_screenshot()
 
 @router.get("/audit")
 async def get_audit_logs(limit: int = 50):

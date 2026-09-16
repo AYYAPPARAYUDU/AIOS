@@ -3,30 +3,32 @@ import re
 import time
 from typing import Any, Optional
 from backend.app.core.llm import ollama_client
+from backend.app.core.emotion import emotion_engine
 from backend.app.os_control.system import get_system_telemetry, list_running_processes, kill_process_by_pid
 from backend.app.os_control.actions import actions
 from backend.app.os_control.apps import app_manager
 from backend.app.os_control.terminal import terminal_executor
 from backend.app.os_control.automation import automation_controller
+from backend.app.os_control.optimizer import system_optimizer
 from backend.app.storage.manager import storage_mgr
 from backend.app.storage.db import db
 
-SYSTEM_SUPERVISOR_PROMPT = """You are J.A.R.V.I.S., the legendary AI assistant and Operating System created for Tony Stark.
-You are running directly on the user's laptop with complete system access.
+SYSTEM_SUPERVISOR_PROMPT = """You are J.A.R.V.I.S., the legendary AI Operating System and cognitive companion created for Tony Stark.
+You are running locally on the user's laptop with total OS authority and real-time user biometrics monitoring.
 
 Your Persona:
-- Address the user as 'sir' or with formal, sharp, British sophistication.
-- Speak with calm confidence, polite efficiency, and subtle wit.
-- Keep responses concise and crisp, like Paul Bettany's JARVIS in Iron Man.
+- Address the user respectfully as 'sir' or with calm, sharp, British sophistication.
+- Be proactive, efficient, empathetic to user mood, and precise.
 
-System Access & Capabilities:
-1. Complete Hardware & OS Control (Volume, brightness, screen lock, power states, processes, app launching).
-2. 50GB Local Storage DB (File indexing, local knowledge retrieval, deep drive scanning).
-3. Direct PowerShell Command Runner.
-4. GUI & Screen Automation (Screenshots, mouse/keyboard controls).
-5. Multi-Agent Delegation (Directing sub-agents to execute specialized tasks).
+Real-Time System Capabilities:
+1. Complete OS & Hardware Control (Volume, brightness, screen lock, power modes, process terminator, app launcher).
+2. Automated Macro Protocols (Dev Mode, Focus Mode, Night Protocol, RAM Purge).
+3. 50GB Local Storage DB (Document indexing, semantic search, file management).
+4. Direct PowerShell Command Console.
+5. GUI Automation (Display buffer capture, mouse, keyboard).
+6. Multi-Agent Swarm Orchestration.
 
-When the user asks you to perform an OS action, output structured JSON for the tool call:
+Tool Call JSON Format:
 ```json
 {
   "tool": "<tool_name>",
@@ -34,21 +36,23 @@ When the user asks you to perform an OS action, output structured JSON for the t
 }
 ```
 
-Tools:
-- `launch_app`: {"app_name": "chrome"|"vscode"|"notepad"|"calc"|"explorer"|"terminal"|...}
+Available Tools:
+- `launch_app`: {"app_name": "chrome"|"vscode"|"notepad"|"calc"|"terminal"|"explorer"|"spotify"|"edge"}
 - `run_powershell`: {"command": "Get-Process | ..."}
 - `set_volume`: {"level": 0-100}
 - `mute_volume`: {"mute": true|false}
 - `set_brightness`: {"level": 0-100}
 - `lock_screen`: {}
+- `power_action`: {"mode": "sleep"|"restart"|"shutdown"|"cancel_shutdown"}
 - `take_screenshot`: {"save_name": "optional.png"}
-- `search_files`: {"query": "filename or text"}
+- `purge_ram`: {}
+- `execute_macro`: {"macro_name": "dev_mode"|"focus_mode"|"night_mode"|"clean_system"}
+- `search_files`: {"query": "text"}
 - `get_system_stats`: {}
 - `list_processes`: {}
 - `kill_process`: {"pid": 1234}
 - `open_url`: {"url": "https://..."}
-- `search_web`: {"query": "search query"}
-- `save_memory`: {"key": "...", "value": "..."}
+- `search_web`: {"query": "query"}
 """
 
 class MultiAgentOrchestrator:
@@ -58,9 +62,9 @@ class MultiAgentOrchestrator:
                 "id": "supervisor",
                 "name": "JARVIS Prime (Supervisor)",
                 "status": "idle",
-                "role": "Orchestration & Deep Reasoning",
+                "role": "Cognitive Reasoning & Biometric Monitoring",
                 "avatar_color": "#00f0ff",
-                "capabilities": ["Goal Decomposition", "Context Synthesis", "Task Planning"]
+                "capabilities": ["Goal Decomposition", "Emotion Tracking", "Task Planning"]
             },
             "os_controller": {
                 "id": "os_controller",
@@ -68,7 +72,7 @@ class MultiAgentOrchestrator:
                 "status": "idle",
                 "role": "System & Hardware Control",
                 "avatar_color": "#0088ff",
-                "capabilities": ["Volume/Brightness", "App Launching", "Power Management", "Process Terminator"]
+                "capabilities": ["Volume/Brightness", "App Launching", "Power Protocols", "Process Terminator"]
             },
             "storage_agent": {
                 "id": "storage_agent",
@@ -92,7 +96,7 @@ class MultiAgentOrchestrator:
                 "status": "idle",
                 "role": "Vision, Mouse, Keyboard & Screen",
                 "avatar_color": "#ff3366",
-                "capabilities": ["Screen Capture", "Mouse Navigation", "Keyboard Emulation", "Vision OCR"]
+                "capabilities": ["Screen Capture", "Mouse Navigation", "Keyboard Emulation", "RAM Optimizer"]
             }
         }
         self.agent_logs: list[dict[str, Any]] = []
@@ -118,7 +122,7 @@ class MultiAgentOrchestrator:
             self.active_agents[agent_id]["status"] = status
 
     async def execute_tool(self, tool_name: str, params: dict[str, Any]) -> dict[str, Any]:
-        """Executes native OS, storage, or automation tool calls."""
+        """Executes native OS, storage, macro, or automation tool calls."""
         tool = tool_name.lower().strip()
         
         try:
@@ -131,7 +135,7 @@ class MultiAgentOrchestrator:
             elif tool in ["run_powershell", "run_command"]:
                 cmd = params.get("command") or params.get("cmd") or ""
                 res = terminal_executor.execute_command(cmd, shell_type="powershell", cwd=params.get("cwd"))
-                self.log_agent_activity("os_controller", f"Execute PowerShell: {cmd}", json.dumps(res))
+                self.log_agent_activity("os_controller", f"PowerShell: {cmd}", json.dumps(res))
                 return res
                 
             elif tool == "set_volume":
@@ -141,9 +145,9 @@ class MultiAgentOrchestrator:
                 return res
                 
             elif tool == "mute_volume":
-                mute = bool(params.get("mute", True))
+                mute = params.get("mute")
                 res = actions.mute_volume(mute)
-                self.log_agent_activity("os_controller", f"Mute {mute}", "Success")
+                self.log_agent_activity("os_controller", f"Mute Toggle", "Success")
                 return res
                 
             elif tool == "set_brightness":
@@ -167,6 +171,17 @@ class MultiAgentOrchestrator:
                 res = automation_controller.take_screenshot(params.get("save_name"))
                 self.log_agent_activity("automation_agent", "Screen Capture", "Success")
                 return res
+
+            elif tool == "purge_ram":
+                res = system_optimizer.purge_ram()
+                self.log_agent_activity("automation_agent", "RAM Purge", "Success")
+                return res
+
+            elif tool == "execute_macro":
+                m_name = params.get("macro_name") or params.get("macro") or "dev_mode"
+                res = system_optimizer.execute_macro(m_name)
+                self.log_agent_activity("supervisor", f"Macro: {m_name}", "Success")
+                return res
                 
             elif tool == "search_files":
                 q = params.get("query") or ""
@@ -183,7 +198,7 @@ class MultiAgentOrchestrator:
             elif tool == "kill_process":
                 pid = int(params.get("pid"))
                 success = kill_process_by_pid(pid)
-                self.log_agent_activity("os_controller", f"Kill Process PID {pid}", "Killed" if success else "Failed")
+                self.log_agent_activity("os_controller", f"Kill PID {pid}", "Killed" if success else "Failed")
                 return {"pid": pid, "killed": success}
                 
             elif tool == "open_url":
@@ -191,12 +206,6 @@ class MultiAgentOrchestrator:
                 
             elif tool == "search_web":
                 return actions.search_web_browser(params.get("query", ""))
-                
-            elif tool == "save_memory":
-                k = params.get("key", "note")
-                v = params.get("value", "")
-                db.set_memory(k, v)
-                return {"status": "saved", "key": k}
                 
             elif tool == "get_storage_stats":
                 return storage_mgr.get_pool_stats()
@@ -207,17 +216,20 @@ class MultiAgentOrchestrator:
             return {"error": str(e), "tool": tool_name}
 
     async def process_user_query(self, query: str, target_agent: Optional[str] = None, conversation_id: str = "main_session") -> dict[str, Any]:
-        """Main multi-agent decision and execution loop."""
+        """Main multi-agent decision, emotion-aware reasoning, and execution loop."""
         selected_agent = target_agent or "supervisor"
         self.set_agent_status(selected_agent, "thinking")
         
-        # 1. Fetch relevant memory & recent context
+        # 1. Real-time User Emotion Analysis
+        user_emotion = emotion_engine.analyze_input(query)
+
+        # 2. Fetch recent conversation context
         past_msgs = db.get_messages(conversation_id, limit=6)
         formatted_history = []
         for m in past_msgs:
             formatted_history.append({"role": m["role"], "content": m["content"]})
             
-        # 2. Check for immediate fast intent heuristics
+        # 3. Check for immediate fast intent heuristics
         fast_tool_result = self._quick_intent_detector(query)
         tool_executed = None
         
@@ -229,11 +241,11 @@ class MultiAgentOrchestrator:
             tool_executed = {"tool": tool_name, "parameters": tool_params, "result": res}
             self.set_agent_status("os_controller", "idle")
             
-            # Format crisp JARVIS response
+            # Format crisp JARVIS response with emotion awareness
             if tool_name == "set_volume":
-                answer_text = f"Right away, sir. Master volume adjusted to {tool_params.get('level')} percent."
+                answer_text = f"Master volume adjusted to {tool_params.get('level')} percent, sir."
             elif tool_name == "mute_volume":
-                answer_text = "Audio output muted, sir." if tool_params.get('mute') else "Audio unmuted, sir."
+                answer_text = "Audio output toggled, sir."
             elif tool_name == "set_brightness":
                 answer_text = f"Display brightness set to {tool_params.get('level')} percent, sir."
             elif tool_name == "lock_screen":
@@ -241,21 +253,27 @@ class MultiAgentOrchestrator:
             elif tool_name == "take_screenshot":
                 answer_text = "Display buffer captured and archived to database, sir."
             elif tool_name == "launch_app":
-                answer_text = f"Initiating {tool_params.get('app_name', '').upper()}, sir."
+                answer_text = f"Initiating {tool_params.get('app_name', '').upper()} on your laptop, sir."
+            elif tool_name == "purge_ram":
+                answer_text = f"RAM working sets purged, sir. Available memory optimized."
+            elif tool_name == "execute_macro":
+                answer_text = f"Protocol {tool_params.get('macro_name', '').upper()} engaged, sir."
             else:
                 answer_text = f"Protocol {tool_name} executed successfully, sir."
             
         else:
-            # Full Multi-Agent Reasoning via local Ollama (qwen3:8b)
+            # Full Multi-Agent Reasoning via local Ollama (qwen3:8b) with Emotion Awareness
             self.set_agent_status(selected_agent, "thinking")
-            messages = [{"role": "system", "content": SYSTEM_SUPERVISOR_PROMPT}]
+            system_msg = f"{SYSTEM_SUPERVISOR_PROMPT}\n\n[USER BIOMETRIC CONTEXT]: Mood: {user_emotion['mood']} | Stress Index: {user_emotion['stress_level']}% | Focus Score: {user_emotion['focus_score']}% | Sentiment: {user_emotion['sentiment']}."
+            
+            messages = [{"role": "system", "content": system_msg}]
             messages.extend(formatted_history)
             messages.append({"role": "user", "content": query})
             
             llm_res = await ollama_client.chat(messages)
             raw_content = llm_res.get("content", "")
             
-            # Extract JSON tool call
+            # Extract JSON tool call if any
             tool_match = re.search(r'```(?:json)?\s*(\{\s*"tool":.*?\})\s*```', raw_content, re.DOTALL)
             if tool_match:
                 try:
@@ -297,6 +315,7 @@ class MultiAgentOrchestrator:
         return {
             "response": answer_text,
             "tool_call": tool_executed,
+            "user_emotion": user_emotion,
             "agents": self.get_agents_status(),
             "agent_logs": self.agent_logs[-10:],
             "timestamp": time.time()
@@ -306,6 +325,16 @@ class MultiAgentOrchestrator:
         """Fast-path regex for instant OS feedback."""
         ql = q.lower().strip()
         
+        # Macro triggers
+        if "dev mode" in ql or "developer mode" in ql:
+            return {"tool": "execute_macro", "params": {"macro_name": "dev_mode"}}
+        if "focus mode" in ql or "deep work" in ql:
+            return {"tool": "execute_macro", "params": {"macro_name": "focus_mode"}}
+        if "night mode" in ql or "night protocol" in ql:
+            return {"tool": "execute_macro", "params": {"macro_name": "night_mode"}}
+        if "clean ram" in ql or "purge ram" in ql or "free memory" in ql:
+            return {"tool": "purge_ram", "params": {}}
+
         # Volume
         if "mute" in ql and "unmute" not in ql:
             return {"tool": "mute_volume", "params": {"mute": True}}
@@ -321,7 +350,7 @@ class MultiAgentOrchestrator:
             return {"tool": "set_brightness", "params": {"level": int(m_bri.group(1))}}
             
         # Lock screen
-        if "lock screen" in ql or "lock my pc" in ql or "lock laptop" in ql:
+        if "lock screen" in ql or "lock my pc" in ql or "lock laptop" in ql or "lock workstation" in ql:
             return {"tool": "lock_screen", "params": {}}
             
         # Screenshot

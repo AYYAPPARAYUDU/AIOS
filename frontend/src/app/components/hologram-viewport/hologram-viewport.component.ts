@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, HostListener, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JarvisAudioService } from '../../core/services/jarvis-audio.service';
 import { Subscription } from 'rxjs';
@@ -13,11 +13,13 @@ import * as THREE from 'three';
 })
 export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   @ViewChild('hologramCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @Input() userMood: string = 'focused';
 
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
   private coreMesh!: THREE.Mesh;
+  private innerSphere!: THREE.Mesh;
   private innerRing!: THREE.Mesh;
   private middleRing!: THREE.Mesh;
   private outerRing!: THREE.Mesh;
@@ -25,12 +27,12 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   private clock = new THREE.Clock();
 
   private mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
-  private state: string = 'idle';
+  public state: string = 'idle';
   private audioIntensity: number = 0.0;
   private animFrameId: number = 0;
   private subs: Subscription[] = [];
 
-  constructor(private audioService: JarvisAudioService) {}
+  constructor(public audioService: JarvisAudioService) {}
 
   ngAfterViewInit(): void {
     this.initThree();
@@ -67,7 +69,7 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   private initThree(): void {
     const canvas = this.canvasRef.nativeElement;
     const width = canvas.clientWidth || 400;
-    const height = canvas.clientHeight || 250;
+    const height = canvas.clientHeight || 240;
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -81,14 +83,13 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     this.scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x00f0ff, 2, 50);
+    const pointLight = new THREE.PointLight(0x00f0ff, 2.5, 60);
     pointLight.position.set(0, 0, 10);
     this.scene.add(pointLight);
 
-    // Build geometries
     this.buildCore();
     this.buildGimbalRings();
     this.buildParticles();
@@ -103,9 +104,9 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     this.scene.add(this.coreMesh);
 
     const innerGeo = new THREE.SphereGeometry(1.2, 16, 16);
-    const innerMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.6 });
-    const innerSphere = new THREE.Mesh(innerGeo, innerMat);
-    this.coreMesh.add(innerSphere);
+    const innerMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.65 });
+    this.innerSphere = new THREE.Mesh(innerGeo, innerMat);
+    this.coreMesh.add(this.innerSphere);
   }
 
   private buildGimbalRings(): void {
@@ -126,7 +127,7 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   }
 
   private buildParticles(): void {
-    const count = 200;
+    const count = 220;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
 
@@ -151,7 +152,13 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     if (newState === 'thinking') mat.color.setHex(0xffb800);
     else if (newState === 'executing') mat.color.setHex(0x00ff9d);
     else if (newState === 'listening') mat.color.setHex(0xff3366);
-    else mat.color.setHex(0x00f0ff);
+    else {
+      // Color based on user mood
+      if (this.userMood === 'stressed') mat.color.setHex(0x00b4d8);
+      else if (this.userMood === 'happy') mat.color.setHex(0xffb800);
+      else if (this.userMood === 'tired') mat.color.setHex(0xb026ff);
+      else mat.color.setHex(0x00f0ff);
+    }
   }
 
   private animate = (): void => {

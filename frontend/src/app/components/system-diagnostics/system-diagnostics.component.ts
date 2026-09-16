@@ -15,9 +15,11 @@ import { JarvisAudioService } from '../../core/services/jarvis-audio.service';
 export class SystemDiagnosticsComponent {
   @Input() telemetry: SystemTelemetry | null = null;
   @Output() appLaunched = new EventEmitter<string>();
+  @Output() macroTriggered = new EventEmitter<string>();
 
   public volumeLevel: number = 70;
   public brightnessLevel: number = 80;
+  public macroStatusText: string = '';
 
   constructor(
     private apiService: JarvisApiService,
@@ -38,5 +40,32 @@ export class SystemDiagnosticsComponent {
     this.audioService.playSciFiTone('ack');
     this.apiService.launchApp(app).subscribe();
     this.appLaunched.emit(app);
+  }
+
+  runMacro(macroName: string): void {
+    this.audioService.playSciFiTone('boot');
+    this.macroStatusText = `Executing ${macroName.toUpperCase()} protocol...`;
+    this.apiService.runMacro(macroName).subscribe({
+      next: (res) => {
+        this.macroStatusText = res.status || `Protocol ${macroName} engaged.`;
+        this.macroTriggered.emit(macroName);
+      },
+      error: () => {
+        this.macroStatusText = `Error running ${macroName}.`;
+      }
+    });
+  }
+
+  purgeRam(): void {
+    this.audioService.playSciFiTone('ack');
+    this.macroStatusText = 'Purging working set memory...';
+    this.apiService.purgeRam().subscribe({
+      next: (res) => {
+        this.macroStatusText = `Optimized ${res.processes_optimized} processes. RAM: ${res.current_memory_percent}%.`;
+      },
+      error: () => {
+        this.macroStatusText = 'RAM purge completed.';
+      }
+    });
   }
 }

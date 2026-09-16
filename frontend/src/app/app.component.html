@@ -9,7 +9,7 @@
   <!-- Mobile View Switcher (Visible on < 992px) -->
   <div *ngIf="isMobile" class="mobile-nav-bar">
     <button class="mob-btn" [class.active]="mobileView === 'diagnostics'" (click)="setMobileView('diagnostics')">
-      <i class="fas fa-tachometer-alt"></i> OS STATUS
+      <i class="fas fa-tachometer-alt"></i> OS & EMOTION
     </button>
     <button class="mob-btn" [class.active]="mobileView === 'chat'" (click)="setMobileView('chat')">
       <i class="fas fa-comments"></i> JARVIS CORE
@@ -32,7 +32,9 @@
     <!-- CENTER PANEL: 3D Hologram Avatar & Chat HUD -->
     <section class="center-column" [class.mob-hidden]="isMobile && mobileView !== 'chat'">
       <div class="hologram-wrapper">
-        <app-hologram-viewport></app-hologram-viewport>
+        <app-hologram-viewport
+          [userMood]="telemetry?.emotion?.mood || 'focused'"
+        ></app-hologram-viewport>
       </div>
       <div class="chat-wrapper">
         <app-chat-console

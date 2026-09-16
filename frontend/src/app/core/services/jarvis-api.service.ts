@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 import { SystemTelemetry, ProcessItem } from '../models/system.model';
 import { AgentModel, AgentLog } from '../models/agent.model';
 import { StorageFileItem, SearchResultItem } from '../models/storage.model';
@@ -46,6 +46,14 @@ export class JarvisApiService {
 
   powerAction(mode: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/api/system/actions/power`, { mode });
+  }
+
+  runMacro(macroName: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/system/macro`, { macro_name: macroName });
+  }
+
+  purgeRam(): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/system/purge-ram`, {});
   }
 
   takeScreenshot(): Observable<any> {
