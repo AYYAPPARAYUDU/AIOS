@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewChecked, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatMessage } from '../../core/models/chat.model';
@@ -13,10 +13,10 @@ import { Subscription } from 'rxjs';
   templateUrl: './chat-console.component.html',
   styleUrls: ['./chat-console.component.scss']
 })
-export class ChatConsoleComponent implements AfterViewChecked {
+export class ChatConsoleComponent implements OnInit, AfterViewChecked, OnDestroy {
   @Input() selectedAgent: string = 'abhi';
   @Output() agentResponse = new EventEmitter<any>();
-  @ViewChild('chatScroll') private chatScrollContainer!: ElementRef;
+  @ViewChild('chatScroll') private chatScrollContainer!: ElementRef<HTMLDivElement>;
 
   public messages: ChatMessage[] = [
     {
@@ -27,12 +27,17 @@ export class ChatConsoleComponent implements AfterViewChecked {
   ];
   public inputText: string = '';
   public sessionStatusMessage: string = '';
+  public isUserScrolledUp: boolean = false;
+  public unreadWhileScrolled: number = 0;
+  private shouldScrollToBottom: boolean = true;
   private subs: Subscription[] = [];
 
   constructor(
     private apiService: JarvisApiService,
     public audioService: JarvisAudioService
-  ) {
+  ) {}
+
+  ngOnInit(): void {
     this.subs.push(
       this.audioService.speechResult$.subscribe(transcript => {
         this.inputText = transcript;
@@ -41,8 +46,51 @@ export class ChatConsoleComponent implements AfterViewChecked {
     );
   }
 
+  ngOnDestroy(): void {
+    this.subs.forEach(s => s.unsubscribe());
+  }
+
   ngAfterViewChecked(): void {
-    this.scrollToBottom();
+    if (this.shouldScrollToBottom) {
+      this.forceScrollToBottom();
+    }
+  }
+
+  public onScroll(): void {
+    if (!this.chatScrollContainer) return;
+    const el = this.chatScrollContainer.nativeElement;
+    const threshold = 80;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+
+    if (atBottom) {
+      this.isUserScrolledUp = false;
+      this.shouldScrollToBottom = true;
+      this.unreadWhileScrolled = 0;
+    } else {
+      this.isUserScrolledUp = true;
+      this.shouldScrollToBottom = false;
+    }
+  }
+
+  public scrollToBottomSmooth(): void {
+    this.isUserScrolledUp = false;
+    this.shouldScrollToBottom = true;
+    this.unreadWhileScrolled = 0;
+    this.forceScrollToBottom(true);
+  }
+
+  private forceScrollToBottom(smooth: boolean = false): void {
+    try {
+      if (this.chatScrollContainer) {
+        const el = this.chatScrollContainer.nativeElement;
+        if (smooth) {
+          el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        } else {
+          el.scrollTop = el.scrollHeight;
+        }
+        this.shouldScrollToBottom = false;
+      }
+    } catch (err) {}
   }
 
   toggleMic(): void {
@@ -85,6 +133,7 @@ export class ChatConsoleComponent implements AfterViewChecked {
             }
           ];
           this.sessionStatusMessage = 'Session memory cleared successfully.';
+          this.shouldScrollToBottom = true;
           setTimeout(() => this.sessionStatusMessage = '', 4000);
         }
       });
@@ -103,6 +152,7 @@ export class ChatConsoleComponent implements AfterViewChecked {
     this.audioService.playSciFiTone('beep');
     this.messages.push({ sender: 'User', role: 'user', content: text });
     this.inputText = '';
+    this.shouldScrollToBottom = true;
     this.audioService.avatarState$.next('thinking');
 
     this.apiService.chatWithAbhi(text, this.selectedAgent).subscribe({
@@ -129,6 +179,13 @@ export class ChatConsoleComponent implements AfterViewChecked {
           toolCall: res.tool_call,
           toolCalls: allTools
         });
+
+        if (this.isUserScrolledUp) {
+          this.unreadWhileScrolled++;
+        } else {
+          this.shouldScrollToBottom = true;
+        }
+
         this.audioService.speak(answer);
         this.agentResponse.emit(res);
       },
@@ -140,6 +197,11 @@ export class ChatConsoleComponent implements AfterViewChecked {
           role: 'assistant',
           content: `Controller anomaly: ${err.message || 'Check server connection'}`
         });
+        if (this.isUserScrolledUp) {
+          this.unreadWhileScrolled++;
+        } else {
+          this.shouldScrollToBottom = true;
+        }
       }
     });
   }
@@ -151,13 +213,10 @@ export class ChatConsoleComponent implements AfterViewChecked {
       content,
       imagePreview
     });
-  }
-
-  private scrollToBottom(): void {
-    try {
-      if (this.chatScrollContainer) {
-        this.chatScrollContainer.nativeElement.scrollTop = this.chatScrollContainer.nativeElement.scrollHeight;
-      }
-    } catch (err) {}
+    if (this.isUserScrolledUp) {
+      this.unreadWhileScrolled++;
+    } else {
+      this.shouldScrollToBottom = true;
+    }
   }
 }

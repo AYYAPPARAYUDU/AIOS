@@ -24,37 +24,48 @@
     <i class="fas fa-info-circle"></i> {{ sessionStatusMessage }}
   </div>
 
-  <div class="chat-messages" #chatScroll>
-    <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="msg.role === 'user' ? 'user' : (msg.sender === 'MY CLONE' ? 'clone' : 'abhi')">
-      <div class="bubble-sender">
-        <i class="fas" [ngClass]="msg.role === 'user' ? 'fa-user' : (msg.sender === 'MY CLONE' ? 'fa-fingerprint text-green' : 'fa-sun')" style="margin-right:4px;"></i>
-        <span>{{ msg.sender | uppercase }}</span>
-      </div>
-      <div class="bubble-body">{{ msg.content }}</div>
-
-      <div *ngIf="msg.imagePreview" style="margin-top:8px;">
-        <img [src]="msg.imagePreview" style="max-width:100%; border-radius:6px; border:1px solid var(--neon-gold);" />
-      </div>
-
-      <!-- Deity Swarm Multi-Agent Execution Trail -->
-      <div *ngIf="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls-trail">
-        <div class="trail-header">
-          <i class="fas fa-sitemap"></i> MULTI-AGENT EXECUTION TRAIL ({{ msg.toolCalls.length }})
+  <!-- Messages Viewport with Scroll Detection -->
+  <div class="chat-messages-wrapper">
+    <div class="chat-messages" #chatScroll (scroll)="onScroll()">
+      <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="msg.role === 'user' ? 'user' : (msg.sender === 'MY CLONE' ? 'clone' : 'abhi')">
+        <div class="bubble-sender">
+          <i class="fas" [ngClass]="msg.role === 'user' ? 'fa-user' : (msg.sender === 'MY CLONE' ? 'fa-fingerprint text-green' : 'fa-sun')" style="margin-right:4px;"></i>
+          <span>{{ msg.sender | uppercase }}</span>
         </div>
-        <div class="trail-list">
-          <div *ngFor="let tc of msg.toolCalls" class="tool-chip">
-            <i class="fas fa-bolt gold-bolt"></i> 
-            <span class="deity-badge">[{{ (tc.executed_by || 'DEITY') | uppercase }}]</span>
-            <span class="tool-action">{{ tc.tool }}</span>
-            <span *ngIf="tc.parameters?.phone" class="param-tag"><i class="fab fa-whatsapp text-green"></i> {{ tc.parameters.phone }}</span>
-            <span *ngIf="tc.parameters?.app_name" class="param-tag"><i class="fas fa-cube text-gold"></i> {{ tc.parameters.app_name }}</span>
-            <span *ngIf="tc.parameters?.query" class="param-tag"><i class="fas fa-search text-cyan"></i> {{ tc.parameters.query }}</span>
-            <span *ngIf="tc.parameters?.level !== undefined" class="param-tag"><i class="fas fa-sliders-h text-gold"></i> {{ tc.parameters.level }}%</span>
-            <span *ngIf="tc.parameters?.macro_name" class="param-tag"><i class="fas fa-magic text-cyan"></i> {{ tc.parameters.macro_name }}</span>
+        <div class="bubble-body">{{ msg.content }}</div>
+
+        <div *ngIf="msg.imagePreview" style="margin-top:8px;">
+          <img [src]="msg.imagePreview" style="max-width:100%; border-radius:6px; border:1px solid var(--neon-gold);" />
+        </div>
+
+        <!-- Deity Swarm Multi-Agent Execution Trail -->
+        <div *ngIf="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls-trail">
+          <div class="trail-header">
+            <i class="fas fa-sitemap"></i> MULTI-AGENT EXECUTION TRAIL ({{ msg.toolCalls.length }})
+          </div>
+          <div class="trail-list">
+            <div *ngFor="let tc of msg.toolCalls" class="tool-chip">
+              <i class="fas fa-bolt gold-bolt"></i> 
+              <span class="deity-badge">[{{ (tc.executed_by || 'DEITY') | uppercase }}]</span>
+              <span class="tool-action">{{ tc.tool }}</span>
+              <span *ngIf="tc.parameters?.phone" class="param-tag"><i class="fab fa-whatsapp text-green"></i> {{ tc.parameters.phone }}</span>
+              <span *ngIf="tc.parameters?.app_name" class="param-tag"><i class="fas fa-cube text-gold"></i> {{ tc.parameters.app_name }}</span>
+              <span *ngIf="tc.parameters?.query" class="param-tag"><i class="fas fa-search text-cyan"></i> {{ tc.parameters.query }}</span>
+              <span *ngIf="tc.parameters?.level !== undefined" class="param-tag"><i class="fas fa-sliders-h text-gold"></i> {{ tc.parameters.level }}%</span>
+              <span *ngIf="tc.parameters?.macro_name" class="param-tag"><i class="fas fa-magic text-cyan"></i> {{ tc.parameters.macro_name }}</span>
+            </div>
           </div>
         </div>
       </div>
+      <div class="scroll-anchor"></div>
     </div>
+
+    <!-- Floating Scroll-to-Bottom Quick Button -->
+    <button class="btn-scroll-bottom" *ngIf="isUserScrolledUp" (click)="scrollToBottomSmooth()" title="Jump to latest message">
+      <i class="fas fa-chevron-down"></i>
+      <span>LATEST</span>
+      <span class="unread-pill" *ngIf="unreadWhileScrolled > 0">+{{ unreadWhileScrolled }}</span>
+    </button>
   </div>
 
   <!-- Quick Command Action Chips -->
