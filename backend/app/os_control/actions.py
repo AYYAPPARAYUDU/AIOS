@@ -195,25 +195,28 @@ class SystemActions:
 
     @staticmethod
     def open_url(url: str) -> dict[str, Any]:
-        """Opens any URL in default web browser."""
+        """Opens any URL in default web browser with multi-layer fallback."""
+        from backend.app.os_control.apps import _open_url_robust
         if not url.startswith("http://") and not url.startswith("https://"):
             url = "https://" + url
-        webbrowser.open(url)
+        _open_url_robust(url)
         db.log_audit("SYSTEM_ACTION", f"Open Browser URL: {url}", "NARADA_Messenger", "SUCCESS")
         return {"action": "open_url", "url": url, "status": "opened"}
 
     @staticmethod
     def search_web_browser(query: str) -> dict[str, Any]:
         """Searches query in default browser."""
+        from backend.app.os_control.apps import _open_url_robust
         encoded = urllib.parse.quote_plus(query)
         url = f"https://www.google.com/search?q={encoded}"
-        webbrowser.open(url)
+        _open_url_robust(url)
         db.log_audit("SYSTEM_ACTION", f"Search Web: {query}", "NARADA_Messenger", "SUCCESS")
         return {"action": "search_web", "query": query, "url": url, "status": "opened"}
 
     @staticmethod
     def open_whatsapp(phone: Optional[str] = None, message: Optional[str] = None) -> dict[str, Any]:
         """Opens WhatsApp app or web, optionally with phone and pre-filled message."""
+        from backend.app.os_control.apps import _open_url_robust
         if phone or message:
             encoded_msg = urllib.parse.quote_plus(message or "")
             clean_phone = re.sub(r"[^\d+]", "", phone or "")
@@ -221,14 +224,14 @@ class SystemActions:
                 url = f"https://web.whatsapp.com/send?phone={clean_phone}&text={encoded_msg}"
             else:
                 url = f"https://web.whatsapp.com/send?text={encoded_msg}"
-            webbrowser.open(url)
+            _open_url_robust(url)
             return {"action": "open_whatsapp", "target": url, "status": "opened"}
         else:
             try:
                 os.startfile("whatsapp:")
                 return {"action": "open_whatsapp", "target": "whatsapp:", "status": "opened"}
             except Exception:
-                webbrowser.open("https://web.whatsapp.com")
+                _open_url_robust("https://web.whatsapp.com")
                 return {"action": "open_whatsapp", "target": "https://web.whatsapp.com", "status": "opened"}
 
     @staticmethod

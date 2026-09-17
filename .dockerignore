@@ -1,0 +1,40 @@
+# Git
+.git/
+.gitignore
+
+# Python virtual env & caches
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.env
+
+# Frontend artifacts & dependencies
+frontend/node_modules/
+frontend/.angular/
+frontend/dist/
+node_modules/
+.angular/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database temporary runtime files
+database/screenshots/*
+database/temp/*
+database/local_store/*
+!database/.gitkeep
+
+# IDE / Editor
+.vscode/
+.idea/
+.continue/
+*.log
+.DS_Store
+Thumbs.db

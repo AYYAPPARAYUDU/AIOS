@@ -71,22 +71,58 @@ APP_PATHS: dict[str, list[str]] = {
 }
 
 def _open_url_robust(url: str) -> bool:
-    """Robustly opens a web URL using Windows startfile with webbrowser and cmd fallbacks."""
+    """Robustly opens a web URL using Windows Shell, direct browsers, explorer, and cmd fallbacks."""
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "https://" + url
+    
+    # 1. Direct Windows ShellExecute
     try:
         os.startfile(url)
         return True
     except Exception:
-        try:
-            webbrowser.open(url)
+        pass
+
+    # 2. Python webbrowser standard library
+    try:
+        if webbrowser.open(url, new=2):
             return True
-        except Exception:
+    except Exception:
+        pass
+
+    # 3. Windows Shell 'start'
+    try:
+        subprocess.Popen(f'start "" "{url}"', shell=True)
+        return True
+    except Exception:
+        pass
+
+    # 4. Windows explorer.exe URL handler
+    try:
+        subprocess.Popen(["explorer.exe", url])
+        return True
+    except Exception:
+        pass
+
+    # 5. Direct Browser Executables (Chrome, Edge, Brave)
+    known_browsers = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Programs\Opera\launcher.exe"),
+        r"C:\Program Files\Mozilla Firefox\firefox.exe"
+    ]
+    for b_path in known_browsers:
+        if os.path.exists(b_path):
             try:
-                subprocess.Popen(f'start "" "{url}"', shell=True)
+                subprocess.Popen([b_path, url])
                 return True
             except Exception:
-                return False
+                continue
+
+    return False
 
 class AppManager:
     @staticmethod
@@ -101,13 +137,13 @@ class AppManager:
             return {"status": "success", "app": app_name, "type": "web_url"}
 
         import urllib.parse
-        if clean_key == "youtube":
+        if clean_key in ["youtube", "open youtube", "yt"]:
             yt_url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(arguments)}" if arguments else "https://www.youtube.com"
             _open_url_robust(yt_url)
             db.log_audit("APP_LAUNCH", f"YouTube Launch: {arguments or 'Home'}", "AppManager", "SUCCESS")
             return {"status": "success", "app": "youtube", "target": yt_url, "query": arguments}
 
-        if clean_key == "github":
+        if clean_key in ["github", "open github", "git"]:
             gh_url = f"https://github.com/search?q={urllib.parse.quote_plus(arguments)}" if arguments else "https://github.com"
             _open_url_robust(gh_url)
             db.log_audit("APP_LAUNCH", f"GitHub Launch: {arguments or 'Home'}", "AppManager", "SUCCESS")
@@ -145,16 +181,6 @@ class AppManager:
             if os.path.isabs(candidate) and os.path.exists(candidate):
                 try:
                     cmd = [candidate]
-                    if arguments:
-                        cmd.extend(arguments.split())
-                    subprocess.Popen(cmd)
-                    launched = True
-                    launched_cmd = candidate
-                    break
-                except Exception as e:
-                    error_msg = str(e)
-                    continue
-
                     if arguments:
                         cmd.extend(arguments.split())
                     subprocess.Popen(cmd)
