@@ -36,7 +36,9 @@ import { AgentModel } from './core/models/agent.model';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  public activeTab: string = 'agents';
+  public isSwarmDrawerOpen: boolean = false;
+  public isToolsDrawerOpen: boolean = false;
+  public activeTab: string = 'contacts';
   public mobileView: 'diagnostics' | 'chat' | 'swarm' = 'chat';
   public isMobile: boolean = false;
   public selectedAgentId: string = 'abhi';
@@ -86,6 +88,25 @@ export class AppComponent implements OnInit {
     this.audioService.playSciFiTone('boot');
   }
 
+  toggleSwarmDrawer(): void {
+    this.isSwarmDrawerOpen = !this.isSwarmDrawerOpen;
+    if (this.isSwarmDrawerOpen) {
+      this.isToolsDrawerOpen = false;
+    }
+  }
+
+  toggleToolsDrawer(): void {
+    this.isToolsDrawerOpen = !this.isToolsDrawerOpen;
+    if (this.isToolsDrawerOpen) {
+      this.isSwarmDrawerOpen = false;
+    }
+  }
+
+  closeAllDrawers(): void {
+    this.isSwarmDrawerOpen = false;
+    this.isToolsDrawerOpen = false;
+  }
+
   setTab(tab: string): void {
     this.audioService.playSciFiTone('beep');
     this.activeTab = tab;
@@ -96,11 +117,11 @@ export class AppComponent implements OnInit {
     this.mobileView = view;
   }
 
-
   onAgentSelected(agentId: string): void {
     this.selectedAgentId = agentId;
+    this.isSwarmDrawerOpen = false;
     if (this.chatConsole) {
-      this.chatConsole.addSystemMessage('ABHI', `Invoking Puranic deity [${agentId.toUpperCase()}] for your command.`);
+      this.chatConsole.addSystemMessage('ABHI', `Switched active focus to deity agent [${agentId.toUpperCase()}].`);
     }
   }
 

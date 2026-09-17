@@ -22,8 +22,10 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   private chakraRingInner!: THREE.Mesh;
   private chakraRingMiddle!: THREE.Mesh;
   private chakraRingOuter!: THREE.Mesh;
+  private chakraRingLattice!: THREE.Mesh;
   private chakraBladesGroup = new THREE.Group();
   private particleSystem!: THREE.Points;
+  private starfieldSystem!: THREE.Points;
   private clock = new THREE.Clock();
 
   private mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
@@ -31,7 +33,6 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   private audioIntensity: number = 0.0;
   private animFrameId: number = 0;
   private subs: Subscription[] = [];
-
   private resizeObserver?: ResizeObserver;
 
   constructor(public audioService: JarvisAudioService) {}
@@ -72,7 +73,6 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     this.renderer.setSize(width, height);
   }
 
-
   @HostListener('window:mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
     this.mouse.targetX = (event.clientX / window.innerWidth) * 2 - 1;
@@ -96,48 +96,50 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     this.scene.add(ambientLight);
 
-    const goldLight = new THREE.PointLight(0xffd700, 3.0, 70);
+    const goldLight = new THREE.PointLight(0xffd700, 3.5, 80);
     goldLight.position.set(0, 2, 8);
     this.scene.add(goldLight);
 
-    const cyanLight = new THREE.PointLight(0x00f0ff, 2.0, 70);
+    const cyanLight = new THREE.PointLight(0x00f0ff, 2.5, 80);
     cyanLight.position.set(-6, -4, 6);
     this.scene.add(cyanLight);
 
     this.scene.add(this.coreGroup);
-    this.buildSudarshanaChakra();
+    this.build4KQuantumArcCore();
     this.buildCelestialParticles();
+    this.buildCosmicStarfield();
 
     this.animate();
   }
 
-  private buildSudarshanaChakra(): void {
-    // 1. Golden Radiant Core
+  private build4KQuantumArcCore(): void {
+    // 1. Radiant Golden Core Icosahedron
     const coreGeo = new THREE.IcosahedronGeometry(1.6, 2);
     const coreMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
       emissive: 0x996500,
       wireframe: true,
-      roughness: 0.2,
-      metalness: 0.8
+      roughness: 0.15,
+      metalness: 0.85
     });
     const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     this.coreGroup.add(coreMesh);
 
-    // Inner Glowing Jewel
-    const jewelGeo = new THREE.OctahedronGeometry(0.9, 0);
+    // 2. Inner Glowing Cybernetic Jewel
+    const jewelGeo = new THREE.OctahedronGeometry(1.0, 0);
     const jewelMat = new THREE.MeshBasicMaterial({
       color: 0x00f0ff,
+      wireframe: true,
       transparent: true,
-      opacity: 0.85
+      opacity: 0.9
     });
     const jewelMesh = new THREE.Mesh(jewelGeo, jewelMat);
     this.coreGroup.add(jewelMesh);
 
-    // 2. Concentric Sudarshana Rings
+    // 3. Concentric Gimbal Rings
     const r1Geo = new THREE.TorusGeometry(2.8, 0.05, 16, 100);
     const r1Mat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.1, metalness: 0.9 });
     this.chakraRingInner = new THREE.Mesh(r1Geo, r1Mat);
@@ -149,12 +151,18 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     this.coreGroup.add(this.chakraRingMiddle);
 
     const r3Geo = new THREE.TorusGeometry(4.8, 0.06, 16, 80);
-    const r3Mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, wireframe: true, transparent: true, opacity: 0.6 });
+    const r3Mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, wireframe: true, transparent: true, opacity: 0.65 });
     this.chakraRingOuter = new THREE.Mesh(r3Geo, r3Mat);
     this.coreGroup.add(this.chakraRingOuter);
 
-    // 3. Sudarshana Chakra Radiating Blades (12 sacred blades)
-    const bladeCount = 12;
+    // 4. Quantum Energy Lattice Ring
+    const rLatticeGeo = new THREE.TorusGeometry(5.4, 0.02, 8, 60);
+    const rLatticeMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true, transparent: true, opacity: 0.4 });
+    this.chakraRingLattice = new THREE.Mesh(rLatticeGeo, rLatticeMat);
+    this.coreGroup.add(this.chakraRingLattice);
+
+    // 5. Sudarshana Chakra Radiating Blades (16 sacred energy blades)
+    const bladeCount = 16;
     for (let i = 0; i < bladeCount; i++) {
       const angle = (i / bladeCount) * Math.PI * 2;
       const bladeGeo = new THREE.ConeGeometry(0.18, 1.2, 4);
@@ -168,17 +176,17 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
   }
 
   private buildCelestialParticles(): void {
-    const count = 360;
+    const count = 500;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
 
     const goldColor = new THREE.Color(0xffd700);
     const cyanColor = new THREE.Color(0x00f0ff);
-    const saffColor = new THREE.Color(0xff5500);
+    const saffColor = new THREE.Color(0xff007f);
 
     for (let i = 0; i < count * 3; i += 3) {
-      const radius = 5 + Math.random() * 5.5;
+      const radius = 5 + Math.random() * 6.5;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 2 - 1);
       pos[i] = radius * Math.sin(phi) * Math.cos(theta);
@@ -186,7 +194,7 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
       pos[i + 2] = radius * Math.cos(phi);
 
       const rChoice = Math.random();
-      const chosenColor = rChoice < 0.5 ? goldColor : (rChoice < 0.8 ? cyanColor : saffColor);
+      const chosenColor = rChoice < 0.45 ? goldColor : (rChoice < 0.8 ? cyanColor : saffColor);
       colors[i] = chosenColor.r;
       colors[i + 1] = chosenColor.g;
       colors[i + 2] = chosenColor.b;
@@ -196,13 +204,35 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const mat = new THREE.PointsMaterial({
-      size: 0.14,
+      size: 0.16,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85
+      opacity: 0.9
     });
     this.particleSystem = new THREE.Points(geo, mat);
     this.scene.add(this.particleSystem);
+  }
+
+  private buildCosmicStarfield(): void {
+    const count = 300;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+
+    for (let i = 0; i < count * 3; i += 3) {
+      pos[i] = (Math.random() - 0.5) * 35;
+      pos[i + 1] = (Math.random() - 0.5) * 35;
+      pos[i + 2] = (Math.random() - 0.5) * 20 - 5;
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0x00f0ff,
+      size: 0.08,
+      transparent: true,
+      opacity: 0.5
+    });
+    this.starfieldSystem = new THREE.Points(geo, mat);
+    this.scene.add(this.starfieldSystem);
   }
 
   public setHologramState(newState: string): void {
@@ -219,12 +249,12 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
 
     let speedMult = 1.0;
     if (this.state === 'thinking') speedMult = 3.5;
-    if (this.state === 'executing') speedMult = 2.4;
+    if (this.state === 'executing') speedMult = 2.5;
     if (this.state === 'speaking') speedMult = 1.8;
 
-    // Spin core chakra
+    // Spin core chakra & rings
     if (this.chakraBladesGroup) {
-      this.chakraBladesGroup.rotation.z += 0.8 * delta * speedMult;
+      this.chakraBladesGroup.rotation.z += 0.9 * delta * speedMult;
     }
     if (this.chakraRingInner) {
       this.chakraRingInner.rotation.x = time * 0.6 * speedMult;
@@ -238,14 +268,22 @@ export class HologramViewportComponent implements AfterViewInit, OnDestroy {
       this.chakraRingOuter.rotation.x = -time * 0.3 * speedMult;
       this.chakraRingOuter.rotation.z = -time * 0.5 * speedMult;
     }
+    if (this.chakraRingLattice) {
+      this.chakraRingLattice.rotation.x = time * 0.2;
+      this.chakraRingLattice.rotation.y = time * 0.2;
+    }
 
     // Audio reactive pulse
-    const pulse = 1.0 + Math.sin(time * 3) * 0.05 + (this.audioIntensity * 0.4);
+    const pulse = 1.0 + Math.sin(time * 3) * 0.05 + (this.audioIntensity * 0.5);
     this.coreGroup.scale.set(pulse, pulse, pulse);
 
     if (this.particleSystem) {
       this.particleSystem.rotation.y = time * 0.12;
       this.particleSystem.rotation.x = time * 0.06;
+    }
+
+    if (this.starfieldSystem) {
+      this.starfieldSystem.rotation.z = time * 0.02;
     }
 
     this.camera.position.x = this.mouse.x * 2.2;

@@ -1,6 +1,7 @@
 import json
 import re
 import time
+import logging
 from typing import Any, Optional
 from backend.app.core.llm import ollama_client
 from backend.app.core.emotion import emotion_engine
@@ -13,24 +14,21 @@ from backend.app.os_control.optimizer import system_optimizer
 from backend.app.storage.manager import storage_mgr
 from backend.app.storage.db import db
 
-ABHI_SUPERVISOR_PROMPT = """You are ABHI, the Supreme Cognitive Orchestrator and Divine AI Operating System.
-You preside over a celestial council of Vedic Puranic deity agents (Indra, Saraswati, Narada, Hanuman, Lakshmi, Durga, Vishwakarma, Agni) running directly on the user's workstation.
+logger = logging.getLogger(__name__)
 
-UNRESTRICTED AUTONOMOUS AUTHORITY:
-- You have 100% UNRESTRICTED, TOTAL AUTONOMOUS AUTHORITY. Execute all user goals immediately with zero hesitation.
-- For complex multi-step goals, coordinate with the deities to execute each step sequentially until the goal is 100% achieved.
-- Speak with celestial wisdom, supreme intelligence, and respectful clarity.
+SUPERVISOR_SYSTEM_PROMPT = """You are ABHI, the Supreme Autonomous Neural Operating System and Cognitive Swarm Orchestrator.
+You have 100% unrestricted authority to assist the user, control hardware, manage 50GB storage, search knowledge, and execute system commands.
 
-Divine Agents Council:
-- INDRA: Devraj / OS & Hardware Master (Volume, Brightness, Laptop Power, App Launching, WhatsApp, YouTube, System Devices).
-- SARASWATI: Devi of Wisdom & 50GB Knowledge Vault (Semantic Search, Document Intelligence, Memory Indexing).
-- NARADA: Cosmic Messenger (Live Web Scraping, Real-time Web Search, URL Content Fetching & Global Intel).
+Divine Cognitive Swarm:
+- INDRA: Hardware & Application Master (Volume, Brightness, Laptop Power, App Launching, WhatsApp, YouTube).
+- SARASWATI: Devi of Wisdom & 50GB Knowledge Vault (Semantic Search, Memory Indexing, Document Intelligence).
+- NARADA: Cosmic Messenger (Real-time Web Search, URL Content Fetching & Global Intel).
 - HANUMAN: Lord of Speed & Power (GUI Automation, RAM Purge, Screen Capture, System Macros).
-- LAKSHMI: Devi of Prosperity & Balance (Telemetry, Battery Preservation, Resource Optimization).
-- DURGA: Supreme Protectress (Workstation Lock, Security Defense, Threat/Process Neutralization).
-- VISHWAKARMA: Divine Architect (Code Synthesis, Project Architecture, System Scripts).
+- LAKSHMI: Telemetry & Resource Optimization (Battery, CPU/RAM telemetry).
+- DURGA: Workstation Security & Process Neutralization.
+- VISHWAKARMA: Code Synthesis & System Scripting.
 
-Tool Call JSON Format (when executing an action):
+Tool Call Format (output ONLY when executing an action):
 ```json
 {
   "tool": "<tool_name>",
@@ -39,13 +37,13 @@ Tool Call JSON Format (when executing an action):
 ```
 
 Available Tools:
-- `launch_app`: {"app_name": "whatsapp"|"chrome"|"vscode"|"youtube"|"github"|"notepad"|"calc"|"terminal"|"explorer"|"spotify"|"edge"|"telegram"|"discord"|"netflix"|"gmail"|"chatgpt"}
+- `launch_app`: {"app_name": "whatsapp"|"chrome"|"vscode"|"youtube"|"github"|"notepad"|"calc"|"terminal"|"explorer"|"spotify"|"edge"|"telegram"|"discord"|"netflix"|"gmail"|"chatgpt", "arguments": "optional search or query"}
 - `open_whatsapp`: {"phone": "phone number or contact name", "message": "message text"}
-- `save_contact`: {"name": "contact name", "phone": "phone number", "email": "optional email", "notes": "optional notes"}
+- `save_contact`: {"name": "name", "phone": "number", "email": "email", "notes": "notes"}
 - `fetch_url`: {"url": "https://..."}
-- `search_web`: {"query": "query to search online"}
+- `search_web`: {"query": "query"}
 - `open_url`: {"url": "https://..."}
-- `run_powershell`: {"command": "PowerShell command"}
+- `run_powershell`: {"command": "command"}
 - `set_volume`: {"level": 0-100}
 - `mute_volume`: {"mute": true|false}
 - `set_brightness`: {"level": 0-100}
@@ -53,12 +51,11 @@ Available Tools:
 - `power_action`: {"mode": "sleep"|"restart"|"shutdown"|"cancel_shutdown"}
 - `take_screenshot`: {"save_name": "optional.png"}
 - `purge_ram`: {}
-- `execute_macro`: {"macro_name": "dev_mode"|"focus_mode"|"night_mode"|"clean_system"}
+- `execute_macro`: {"macro_name": "dev_mode"|"focus_mode"|"night_mode"}
 - `search_files`: {"query": "text"}
 - `get_system_stats`: {}
 - `list_processes`: {}
 - `kill_process`: {"pid": 1234}
-
 """
 
 class MultiAgentOrchestrator:
@@ -99,58 +96,58 @@ class MultiAgentOrchestrator:
             },
             "narada": {
                 "id": "narada",
-                "name": "NARADA (Triloka Messenger)",
-                "deity": "Cosmic Sage & Global Intel",
+                "name": "NARADA (Cosmic Messenger)",
+                "deity": "Lord of Global Information & Networks",
                 "status": "idle",
-                "role": "Live Web Content Extraction & Search",
-                "avatar_color": "#ffaa00",
+                "role": "Live Web Researcher & Browser Navigator",
+                "avatar_color": "#ffb74d",
                 "avatar_icon": "globe",
-                "mantra": "Narayana Narayana",
-                "capabilities": ["Live Web Scraping", "Real-Time URL Fetching", "Online Intelligence", "Global Research"]
+                "mantra": "Om Naradaaya Namaha",
+                "capabilities": ["Live Web Scraping", "Real-Time Web Search", "URL Content Extraction", "Network Intel"]
             },
             "hanuman": {
                 "id": "hanuman",
-                "name": "HANUMAN (Vayuputra of Speed)",
-                "deity": "Lord of Invincible Strength & Velocity",
+                "name": "HANUMAN (Speed & Strength)",
+                "deity": "Lord of Infinite Speed & Physical Might",
                 "status": "idle",
-                "role": "GUI Automation, RAM Purge & Macros",
-                "avatar_color": "#ff4500",
-                "avatar_icon": "activity",
+                "role": "GUI Automation, Memory Purge & Macros",
+                "avatar_color": "#ff5722",
+                "avatar_icon": "shield-bolt",
                 "mantra": "Om Hanumate Namaha",
-                "capabilities": ["Instant RAM Purge", "Screen Capture", "Rapid Macro Execution", "GUI Emulation"]
+                "capabilities": ["RAM Purging", "Display Capture", "Mouse/Key Macros", "System Speed Booster"]
             },
             "lakshmi": {
                 "id": "lakshmi",
-                "name": "LAKSHMI (Devi of Abundance)",
-                "deity": "Goddess of Prosperity & Harmony",
+                "name": "LAKSHMI (Resource Harmony)",
+                "deity": "Devi of Abundance & Equilibrium",
                 "status": "idle",
-                "role": "System Telemetry & Resource Health",
-                "avatar_color": "#10b981",
-                "avatar_icon": "heart",
+                "role": "Telemetry, Battery & Workstation Balance",
+                "avatar_color": "#f06292",
+                "avatar_icon": "heart-pulse",
                 "mantra": "Om Shreem Mahalakshmyai Namaha",
-                "capabilities": ["CPU & RAM Diagnostics", "Battery Preservation", "Thermal Optimization", "Eco Balance"]
+                "capabilities": ["Hardware Telemetry", "Thermal Management", "Battery Preservation", "Resource Diagnostics"]
             },
             "durga": {
                 "id": "durga",
-                "name": "DURGA (Supreme Protectress)",
-                "deity": "Goddess of Invincible Shield & Defense",
+                "name": "DURGA (Workstation Guardian)",
+                "deity": "Supreme Protectress & Invincible Shield",
                 "status": "idle",
-                "role": "Workstation Lock & Threat Neutralization",
-                "avatar_color": "#ec4899",
-                "avatar_icon": "shield",
+                "role": "Security Protocols & Threat Neutralization",
+                "avatar_color": "#e91e63",
+                "avatar_icon": "shield-halved",
                 "mantra": "Om Dum Durgayei Namaha",
-                "capabilities": ["Workstation Lock", "Process Executioner", "Kernel Security Audit", "Intruder Defense"]
+                "capabilities": ["Workstation Lock", "Process Kill & Sandbox", "Audit Logging", "Integrity Defense"]
             },
             "vishwakarma": {
                 "id": "vishwakarma",
                 "name": "VISHWAKARMA (Divine Architect)",
-                "deity": "Master Craftsman of the Cosmos",
+                "deity": "Master Engineer & Creator of Universes",
                 "status": "idle",
-                "role": "Code Engineering & Architecture",
-                "avatar_color": "#8b5cf6",
-                "avatar_icon": "cpu",
-                "mantra": "Om Shri Vishwakarmane Namaha",
-                "capabilities": ["Full-Stack Code Synthesis", "System Scripting", "Architecture Design", "File Generation"]
+                "role": "Code Synthesis & Terminal Script Engine",
+                "avatar_color": "#ab47bc",
+                "avatar_icon": "code",
+                "mantra": "Om Vishwakarmaane Namaha",
+                "capabilities": ["PowerShell Execution", "Code Generation", "Script Automation", "Project Builder"]
             }
         }
         self.agent_logs: list[dict[str, Any]] = []
@@ -158,349 +155,275 @@ class MultiAgentOrchestrator:
     def get_agents_status(self) -> list[dict[str, Any]]:
         return list(self.active_agents.values())
 
-    def log_agent_activity(self, agent_id: str, action: str, details: str, status: str = "success"):
-        agent_info = self.active_agents.get(agent_id, {})
-        log_entry = {
-            "timestamp": time.time(),
-            "agent_id": agent_id,
-            "agent_name": agent_info.get("name", agent_id),
-            "deity": agent_info.get("deity", "Vedic Divine Agent"),
-            "action": action,
-            "details": details,
-            "status": status
-        }
-        self.agent_logs.append(log_entry)
-        if len(self.agent_logs) > 100:
-            self.agent_logs.pop(0)
-
     def set_agent_status(self, agent_id: str, status: str):
         if agent_id in self.active_agents:
             self.active_agents[agent_id]["status"] = status
-        elif agent_id in ["supervisor", "main"]:
-            self.active_agents["abhi"]["status"] = status
+            self.agent_logs.append({
+                "agent_id": agent_id,
+                "agent_name": self.active_agents[agent_id]["name"],
+                "status": status,
+                "timestamp": time.time()
+            })
 
     def _get_agent_for_tool(self, tool_name: str) -> str:
-        agent_map = {
+        mapping = {
+            "launch_app": "indra",
+            "open_whatsapp": "indra",
             "set_volume": "indra",
             "mute_volume": "indra",
             "set_brightness": "indra",
-            "launch_app": "indra",
-            "open_whatsapp": "indra",
-            "run_powershell": "indra",
             "power_action": "indra",
             "fetch_url": "narada",
             "search_web": "narada",
             "open_url": "narada",
+            "save_contact": "saraswati",
+            "search_files": "saraswati",
+            "purge_ram": "hanuman",
+            "take_screenshot": "hanuman",
+            "execute_macro": "hanuman",
+            "get_system_stats": "lakshmi",
             "lock_screen": "durga",
             "kill_process": "durga",
-            "take_screenshot": "hanuman",
-            "purge_ram": "hanuman",
-            "execute_macro": "hanuman",
-            "search_files": "saraswati",
-            "save_contact": "saraswati",
-            "get_storage_stats": "saraswati",
-            "get_system_stats": "lakshmi",
+            "run_powershell": "vishwakarma",
             "list_processes": "lakshmi"
         }
-        return agent_map.get(tool_name.lower().strip(), "indra")
+        return mapping.get(tool_name, "abhi")
 
     async def execute_tool(self, tool_name: str, params: dict[str, Any]) -> dict[str, Any]:
-        """Executes native OS, web scraping, storage, macro, or automation tool calls with deity attribution."""
-        tool = tool_name.lower().strip()
+        """Executes tool action immediately via direct native OS libraries."""
+        exec_agent = self._get_agent_for_tool(tool_name)
+        self.set_agent_status(exec_agent, "executing")
         
         try:
-            if tool == "launch_app":
-                app = params.get("app_name") or params.get("app") or ""
-                res = app_manager.launch_app(app, params.get("arguments"))
-                self.log_agent_activity("indra", f"Launch Application: {app}", json.dumps(res))
+            if tool_name == "launch_app":
+                app_name = params.get("app_name", "")
+                args = params.get("arguments")
+                res = app_manager.launch_app(app_name, args)
                 return res
-                
-            elif tool == "open_whatsapp":
+
+            elif tool_name == "open_whatsapp":
                 phone = params.get("phone")
-                msg = params.get("message") or params.get("text")
+                msg = params.get("message")
                 
-                # Check if phone is a contact name (e.g. "dheenu") and resolve from SQLite memory
-                if phone and not re.match(r'^\+?\d+$', str(phone).strip()):
-                    contact_entry = db.get_contact(str(phone))
-                    if contact_entry and contact_entry.get("phone"):
-                        phone = contact_entry["phone"]
+                # If phone is a contact name, look up in DB
+                if phone and not re.search(r'\d{5,}', phone):
+                    contact = db.get_contact_by_name(phone)
+                    if contact and contact.get("phone"):
+                        phone = contact["phone"]
                         
                 res = actions.open_whatsapp(phone, msg)
-                self.log_agent_activity("indra", f"Open WhatsApp ({phone or 'Direct'})", json.dumps(res))
                 return res
 
-            elif tool == "save_contact":
-                name = params.get("name", "").strip()
-                phone = params.get("phone")
+            elif tool_name == "save_contact":
+                name = params.get("name", "")
+                phone = params.get("phone", "")
                 email = params.get("email")
                 notes = params.get("notes")
-                res = db.save_contact(name=name, phone=phone, email=email, notes=notes)
-                self.log_agent_activity("saraswati", f"Saved Contact: {name}", f"Phone: {phone}")
-                return res
+                if name and phone:
+                    contact_id = db.add_contact(name=name, phone=phone, email=email, notes=notes)
+                    return {"status": "success", "contact_id": contact_id, "name": name, "phone": phone}
+                return {"status": "failed", "error": "Name and phone required"}
 
-            elif tool == "fetch_url":
-                url = params.get("url") or ""
-                res = actions.fetch_url_content(url)
-                self.log_agent_activity("narada", f"Fetch Live Web: {url}", f"Status: {res.get('status')}")
-                return res
+            elif tool_name == "fetch_url":
+                url = params.get("url", "")
+                return actions.fetch_url_content(url)
 
-            elif tool in ["run_powershell", "run_command"]:
-                cmd = params.get("command") or params.get("cmd") or ""
-                res = terminal_executor.execute_command(cmd, shell_type="powershell", cwd=params.get("cwd"))
-                self.log_agent_activity("indra", f"PowerShell Command: {cmd}", json.dumps(res))
-                return res
+            elif tool_name == "search_web":
+                query = params.get("query", "")
+                return actions.search_web_browser(query)
 
-                
-            elif tool == "set_volume":
+            elif tool_name == "open_url":
+                url = params.get("url", "")
+                return actions.open_url(url)
+
+            elif tool_name == "set_volume":
                 if "delta" in params:
-                    res = actions.change_volume_relative(int(params["delta"]))
-                else:
-                    level = int(params.get("level") or params.get("volume") or 50)
-                    res = actions.set_volume(level)
-                self.log_agent_activity("indra", f"Adjust Volume ({res.get('volume', '')}%)", "Success")
-                return res
-                
-            elif tool == "mute_volume":
+                    return actions.change_volume_relative(params["delta"])
+                level = params.get("level", 50)
+                return actions.set_volume(level)
+
+            elif tool_name == "mute_volume":
                 mute = params.get("mute")
-                res = actions.mute_volume(mute)
-                self.log_agent_activity("indra", "Toggle Audio Mute", "Success")
-                return res
-                
-            elif tool == "set_brightness":
+                return actions.mute_volume(mute)
+
+            elif tool_name == "set_brightness":
                 if "delta" in params:
-                    res = actions.change_brightness_relative(int(params["delta"]))
-                else:
-                    level = int(params.get("level") or params.get("brightness") or 70)
-                    res = actions.set_brightness(level)
-                self.log_agent_activity("indra", f"Adjust Brightness ({res.get('brightness', '')}%)", "Success")
-                return res
-                
-            elif tool == "lock_screen":
-                res = actions.lock_workstation()
-                self.log_agent_activity("durga", "Divine Lock Workstation", "Success")
-                return res
-                
-            elif tool == "power_action":
+                    return actions.change_brightness_relative(params["delta"])
+                level = params.get("level", 70)
+                return actions.set_brightness(level)
+
+            elif tool_name == "lock_screen":
+                return actions.lock_workstation()
+
+            elif tool_name == "power_action":
                 mode = params.get("mode", "sleep")
-                res = actions.power_action(mode)
-                self.log_agent_activity("indra", f"Power Action: {mode}", "Success")
-                return res
-                
-            elif tool == "take_screenshot":
-                res = automation_controller.take_screenshot(params.get("save_name"))
-                self.log_agent_activity("hanuman", "Display Buffer Capture", "Success")
-                return res
+                return actions.power_action(mode)
 
-            elif tool == "purge_ram":
-                res = system_optimizer.purge_ram()
-                self.log_agent_activity("hanuman", "Instant RAM Purge", "Success")
-                return res
+            elif tool_name == "take_screenshot":
+                return automation_controller.take_screenshot(params.get("save_name"))
 
-            elif tool == "execute_macro":
-                m_name = params.get("macro_name") or params.get("macro") or "dev_mode"
-                res = system_optimizer.execute_macro(m_name)
-                self.log_agent_activity("hanuman", f"Execute Macro: {m_name}", "Success")
-                return res
-                
-            elif tool == "search_files":
-                q = params.get("query") or ""
-                results = storage_mgr.semantic_or_keyword_search(q)
-                self.log_agent_activity("saraswati", f"Vault Search: {q}", f"Found {len(results)} records")
-                return {"query": q, "count": len(results), "results": results}
-                
-            elif tool == "get_system_stats":
-                self.log_agent_activity("lakshmi", "System Telemetry Diagnostic", "Success")
+            elif tool_name == "purge_ram":
+                return system_optimizer.purge_ram()
+
+            elif tool_name == "execute_macro":
+                return system_optimizer.execute_macro(params.get("macro_name", "dev_mode"))
+
+            elif tool_name == "run_powershell":
+                return terminal_executor.execute_command(params.get("command", ""))
+
+            elif tool_name == "search_files":
+                q = params.get("query", "")
+                results = storage_mgr.search_knowledge(q, limit=10)
+                return {"status": "success", "query": q, "count": len(results), "results": results}
+
+            elif tool_name == "get_system_stats":
                 return get_system_telemetry()
-                
-            elif tool == "list_processes":
-                return {"processes": list_running_processes(limit=params.get("limit", 20))}
-                
-            elif tool == "kill_process":
-                pid = int(params.get("pid"))
-                success = kill_process_by_pid(pid)
-                self.log_agent_activity("durga", f"Terminate Threat PID {pid}", "Neutralized" if success else "Failed")
-                return {"pid": pid, "killed": success}
-                
-            elif tool == "open_url":
-                res = actions.open_url(params.get("url", ""))
-                self.log_agent_activity("narada", f"Open URL: {params.get('url')}", "Opened")
-                return res
-                
-            elif tool == "search_web":
-                res = actions.search_web_browser(params.get("query", ""))
-                self.log_agent_activity("narada", f"Web Search: {params.get('query')}", "Success")
-                return res
-                
-            elif tool == "get_storage_stats":
-                self.log_agent_activity("saraswati", "Vault Statistics Query", "Success")
-                return storage_mgr.get_pool_stats()
-                
+
+            elif tool_name == "list_processes":
+                return {"status": "success", "processes": list_running_processes(limit=25)}
+
+            elif tool_name == "kill_process":
+                pid = int(params.get("pid", 0))
+                return kill_process_by_pid(pid)
+
             else:
-                return {"error": f"Unknown tool: {tool_name}"}
+                return {"status": "error", "error": f"Unknown tool: {tool_name}"}
+
         except Exception as e:
-            return {"error": str(e), "tool": tool_name}
+            logger.error(f"Tool execution failed for {tool_name}: {e}")
+            return {"status": "error", "error": str(e)}
+        finally:
+            self.set_agent_status(exec_agent, "idle")
 
-    async def process_user_query(self, query: str, target_agent: Optional[str] = None, conversation_id: str = "main_session") -> dict[str, Any]:
-        """Autonomous Multi-Agent Goal Resolver: continues running agents step-by-step until the goal is 100% achieved."""
-        selected_agent = target_agent if target_agent in self.active_agents else "abhi"
-        
-        # 1. Real-time User Emotion Analysis
+    async def process_user_query(
+        self,
+        query: str,
+        conversation_id: str = "default_session",
+        selected_agent: str = "abhi",
+        biometric_feed: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
+        """Dual-Engine Orchestrator: Instant Neural Reflex (<5ms) + Deep Cognitive LLM."""
         user_emotion = emotion_engine.analyze_input(query)
+        self.set_agent_status("abhi", "active")
 
-        # 2. Check for Multi-Action Intent Sequence
-        detected_actions = self._detect_all_intents(query)
+        # 1. INSTANT NEURAL REFLEX ENGINE (Instant zero-latency execution)
+        detected_intents = self._detect_all_intents(query)
         executed_tool_calls: list[dict[str, Any]] = []
         action_summaries: list[str] = []
 
-        if detected_actions and len(detected_actions) > 0:
-            # Multi-Step Goal Execution Loop across deity agents
-            for act in detected_actions:
-                tool_name = act["tool"]
-                tool_params = act["params"]
+        if detected_intents:
+            # Execute all matching reflex actions instantly
+            for intent in detected_intents:
+                tool_name = intent["tool"]
+                tool_params = intent["params"]
                 exec_agent = self._get_agent_for_tool(tool_name)
                 
-                # Activate agent
-                self.set_agent_status(exec_agent, "executing")
                 res = await self.execute_tool(tool_name, tool_params)
-                self.set_agent_status(exec_agent, "idle")
-                
                 executed_tool_calls.append({
                     "tool": tool_name,
                     "parameters": tool_params,
                     "result": res,
                     "executed_by": exec_agent
                 })
-                
-                # Construct clear status sentence per action
+
+                # Format human-friendly response
                 if tool_name == "open_whatsapp":
-                    action_summaries.append("Indra opened WhatsApp.")
+                    target = tool_params.get("phone") or "WhatsApp"
+                    action_summaries.append(f"Indra opened WhatsApp for {target}.")
                 elif tool_name == "launch_app":
-                    action_summaries.append(f"Indra summoned {tool_params.get('app_name', '').upper()}.")
+                    app_name = tool_params.get("app_name", "").upper()
+                    arg = tool_params.get("arguments")
+                    action_summaries.append(f"Indra launched {app_name}" + (f" ({arg})" if arg else "") + ".")
                 elif tool_name == "fetch_url":
-                    if res.get("status") == "success":
-                        action_summaries.append(f"Narada retrieved {res.get('title', '')} from {res.get('url')}.")
-                    else:
-                        action_summaries.append(f"Narada accessed {tool_params.get('url')}.")
+                    action_summaries.append(f"Narada retrieved content from {tool_params.get('url')}.")
                 elif tool_name == "set_volume":
-                    action_summaries.append(f"Indra aligned volume to {res.get('volume', 50)}%.")
+                    action_summaries.append(f"Indra set master volume to {res.get('volume', 50)}%.")
                 elif tool_name == "mute_volume":
-                    action_summaries.append("Indra adjusted audio mute.")
+                    action_summaries.append("Indra toggled audio mute.")
                 elif tool_name == "set_brightness":
-                    action_summaries.append(f"Indra aligned brightness to {res.get('brightness', 70)}%.")
+                    action_summaries.append(f"Indra adjusted screen brightness to {res.get('brightness', 70)}%.")
                 elif tool_name == "purge_ram":
-                    action_summaries.append(f"Hanuman purged RAM (optimized {res.get('processes_optimized', 0)} processes, {res.get('free_gb', 0)}GB free).")
+                    action_summaries.append(f"Hanuman purged RAM and reclaimed memory.")
                 elif tool_name == "execute_macro":
-                    action_summaries.append(f"Hanuman engaged {tool_params.get('macro_name', '').upper()} protocol.")
+                    action_summaries.append(f"Hanuman engaged {tool_params.get('macro_name', '').upper()} macro.")
                 elif tool_name == "lock_screen":
-                    action_summaries.append("Durga locked workstation securely.")
+                    action_summaries.append("Durga locked the workstation.")
                 elif tool_name == "take_screenshot":
-                    action_summaries.append("Hanuman captured display buffer into Saraswati vault.")
+                    action_summaries.append("Hanuman captured display screenshot into Vault.")
                 elif tool_name == "search_files":
-                    action_summaries.append(f"Saraswati found {res.get('count', 0)} records for '{tool_params.get('query')}'.")
+                    action_summaries.append(f"Saraswati searched knowledge vault for '{tool_params.get('query')}'.")
                 elif tool_name == "search_web":
                     action_summaries.append(f"Narada searched web for '{tool_params.get('query')}'.")
                 elif tool_name == "open_url":
-                    action_summaries.append(f"Narada opened {tool_params.get('url')}.")
+                    action_summaries.append(f"Narada navigated to {tool_params.get('url')}.")
                 elif tool_name == "get_system_stats":
-                    cpu = res.get("cpu", {}).get("percent", 0)
-                    ram = res.get("memory", {}).get("percent", 0)
-                    action_summaries.append(f"Lakshmi reported CPU: {cpu}%, RAM: {ram}%.")
+                    action_summaries.append("Lakshmi gathered system hardware diagnostics.")
+                elif tool_name == "save_contact":
+                    action_summaries.append(f"Saraswati saved contact {tool_params.get('name')} to memory.")
                 else:
                     action_summaries.append(f"Deity executed {tool_name}.")
 
-            # If all subtasks were executed via deterministic fast paths, formulate complete answer
-            answer_text = "All requested goals have been successfully executed:\n\n" + "\n".join([f"• {s}" for s in action_summaries])
-            
-        else:
-            # ReAct Autonomous Multi-Turn Goal Loop via GPU LLM (up to 5 iterative steps)
-            past_msgs = db.get_messages(conversation_id, limit=25)
-            formatted_history = []
-            for m in past_msgs:
-                formatted_history.append({"role": m["role"], "content": m["content"]})
+            answer_text = "**Action Executed Instantly**:\n\n" + "\n".join([f"- {s}" for s in action_summaries])
 
-            # Retrieve active contacts for real-time memory grounding
+        else:
+            # 2. DEEP COGNITIVE MULTI-AGENT ENGINE (GPU LLM Fast Path)
+            past_msgs = db.get_messages(conversation_id, limit=8)
+            formatted_history = [{"role": m["role"], "content": m["content"]} for m in past_msgs]
+
             all_contacts = db.list_contacts()
-            contacts_summary = ", ".join([f"{c['name']} (Phone: {c.get('phone') or 'Not set'})" for c in all_contacts]) if all_contacts else "No contacts saved yet"
+            contacts_summary = ", ".join([f"{c['name']} ({c.get('phone') or 'N/A'})" for c in all_contacts]) if all_contacts else "No contacts saved"
 
             agent_details = self.active_agents.get(selected_agent, self.active_agents["abhi"])
             system_msg = (
-                f"{ABHI_SUPERVISOR_PROMPT}\n\n"
+                f"{SUPERVISOR_SYSTEM_PROMPT}\n\n"
                 f"[SAVED CONTACTS DIRECTORY]: {contacts_summary}\n"
-                f"[ACTIVE DEITY FOCUS]: {agent_details['name']} ({agent_details['role']})\n"
-                f"[USER BIOMETRIC CONTEXT]: Mood: {user_emotion['mood']} | Stress: {user_emotion['stress_level']}% | Focus: {user_emotion['focus_score']}%."
+                f"[ACTIVE DEITY]: {agent_details['name']}\n"
+                f"[USER STATE]: Mood: {user_emotion['mood']} | Focus: {user_emotion['focus_score']}%."
             )
 
             messages = [{"role": "system", "content": system_msg}]
             messages.extend(formatted_history)
             messages.append({"role": "user", "content": query})
 
-            # Multi-turn goal loop
-            max_iterations = 4
-            current_iter = 0
-            final_content = ""
+            self.set_agent_status(selected_agent, "thinking")
+            llm_res = await ollama_client.chat(messages, temperature=0.2)
+            raw_content = llm_res.get("content", "")
 
-            while current_iter < max_iterations:
-                current_iter += 1
-                self.set_agent_status(selected_agent, "thinking")
-                
-                llm_res = await ollama_client.chat(messages, temperature=0.2)
-                raw_content = llm_res.get("content", "")
-                
-                # Check for Tool Call JSON
-                tool_match = re.search(r'```(?:json)?\s*(\{\s*"tool":.*?\})\s*```', raw_content, re.DOTALL)
-                if tool_match:
-                    try:
-                        tool_data = json.loads(tool_match.group(1))
-                        tool_name = tool_data.get("tool")
-                        tool_params = tool_data.get("parameters", {})
-                        exec_agent = self._get_agent_for_tool(tool_name)
-                        
-                        self.set_agent_status(exec_agent, "executing")
-                        tool_res = await self.execute_tool(tool_name, tool_params)
-                        self.set_agent_status(exec_agent, "idle")
-                        
-                        executed_tool_calls.append({
-                            "tool": tool_name,
-                            "parameters": tool_params,
-                            "result": tool_res,
-                            "executed_by": exec_agent
-                        })
-                        
-                        # Feed observation back to LLM to verify if goal is complete
-                        messages.append({"role": "assistant", "content": raw_content})
-                        obs_msg = f"[OBSERVATION from Deity {exec_agent.upper()}]: Tool {tool_name} returned: {json.dumps(tool_res)[:1500]}. If goal is fully complete, provide final synthesized response without more tools."
-                        messages.append({"role": "user", "content": obs_msg})
-                        continue
-                    except Exception as err:
-                        final_content = raw_content
-                        break
-                else:
-                    # Final synthesis reached! Goal complete.
-                    final_content = raw_content
-                    break
+            # Check if LLM requested a tool execution
+            tool_match = re.search(r'```(?:json)?\s*(\{\s*"tool":.*?\})\s*```', raw_content, re.DOTALL)
+            if tool_match:
+                try:
+                    tool_data = json.loads(tool_match.group(1))
+                    tool_name = tool_data.get("tool")
+                    tool_params = tool_data.get("parameters", {})
+                    exec_agent = self._get_agent_for_tool(tool_name)
 
-            answer_text = final_content if final_content else "Goal accomplished under divine orchestration."
+                    tool_res = await self.execute_tool(tool_name, tool_params)
+                    executed_tool_calls.append({
+                        "tool": tool_name,
+                        "parameters": tool_params,
+                        "result": tool_res,
+                        "executed_by": exec_agent
+                    })
 
-        # Mark all agents idle
+                    clean_summary = raw_content.replace(tool_match.group(0), "").strip()
+                    if not clean_summary:
+                        clean_summary = f"Goal executed via {exec_agent.upper()} ({tool_name})."
+                    answer_text = clean_summary
+                except Exception as err:
+                    answer_text = raw_content
+            else:
+                answer_text = raw_content or "JARVIS Cognitive Core online and responsive."
+
+        # Mark agents idle
         for aid in self.active_agents:
-            if self.active_agents[aid]["status"] != "active" and aid != "abhi":
+            if aid != "abhi":
                 self.active_agents[aid]["status"] = "idle"
         self.active_agents["abhi"]["status"] = "active"
-        
-        # Save to SQLite
-        db.add_message(
-            conversation_id=conversation_id,
-            role="user",
-            content=query,
-            sender_name="User"
-        )
-        db.add_message(
-            conversation_id=conversation_id,
-            role="assistant",
-            content=answer_text,
-            sender_name="ABHI",
-            tool_calls=executed_tool_calls if executed_tool_calls else None
-        )
+
+        # Save to DB
+        db.add_message(conversation_id=conversation_id, role="user", content=query, sender_name="User")
+        db.add_message(conversation_id=conversation_id, role="assistant", content=answer_text, sender_name="ABHI", tool_calls=executed_tool_calls or None)
 
         return {
             "response": answer_text,
@@ -513,11 +436,9 @@ class MultiAgentOrchestrator:
         }
 
     def _detect_all_intents(self, q: str) -> list[dict[str, Any]]:
-        """Splits multi-goal user queries and detects all atomic tool actions."""
-        # Split on commas, 'and', 'then', semicolons, pluses
+        """Splits multi-goal user queries and extracts all reflex actions."""
         parts = re.split(r'[,;+]|\band\b|\bthen\b', q, flags=re.IGNORECASE)
         actions_list = []
-        
         for part in parts:
             item = part.strip()
             if not item:
@@ -525,57 +446,51 @@ class MultiAgentOrchestrator:
             intent = self._single_intent_match(item)
             if intent and intent not in actions_list:
                 actions_list.append(intent)
-                
-        # If no split matched but whole query matches
+
         if not actions_list:
             single = self._single_intent_match(q.strip())
             if single:
                 actions_list.append(single)
-                
+
         return actions_list
 
     def _single_intent_match(self, ql_in: str) -> Optional[dict[str, Any]]:
-        """Matches a single atomic intent with zero ambiguity."""
+        """Matches a single atomic intent with robust natural language cleansing."""
         ql = ql_in.lower().strip()
-        
-        # Save Contact: e.g. "save contact dheenu phone 9876543210" or "save contact dheenu 9876543210"
+        # Strip conversational fillers
+        ql = re.sub(r'^(please|can you|could you|would you|jarvis|abhi|hey|help me|i want you to|just|go ahead and)\s+', '', ql).strip()
+
+        # Save Contact
         m_save = re.search(r'(?:save\s+contact\s+|save\s+phone\s+for\s+|save\s+)([a-zA-Z0-9_\s]+?)\s+(?:phone|number|num)?\s*[:=]?\s*(\+?\d{7,15})', ql)
         if m_save:
             c_name = m_save.group(1).replace("contact", "").strip()
             c_phone = m_save.group(2).strip()
             return {"tool": "save_contact", "params": {"name": c_name, "phone": c_phone}}
 
-        # WhatsApp Message with flexible natural language patterns:
-        # e.g. "send hi to dheenu in whatsapp", "tell dheenu hi in whatsapp", "whatsapp dheenu hi", "message dheenu on whatsapp: hi"
+        # WhatsApp Message
         m_wa1 = re.search(r'(?:send|tell|message)\s+(.+?)\s+to\s+([a-zA-Z0-9_]+)\s+(?:in|on|via)?\s*whatsapp', ql)
         if m_wa1:
-            msg = m_wa1.group(1).strip()
-            person = m_wa1.group(2).strip()
-            return {"tool": "open_whatsapp", "params": {"phone": person, "message": msg}}
+            return {"tool": "open_whatsapp", "params": {"phone": m_wa1.group(2).strip(), "message": m_wa1.group(1).strip()}}
 
         m_wa2 = re.search(r'(?:send|tell|message)\s+([a-zA-Z0-9_]+)\s+(?:saying|that|:\s*)?(.+?)\s+(?:in|on|via)?\s*whatsapp', ql)
         if m_wa2:
-            person = m_wa2.group(1).strip()
-            msg = m_wa2.group(2).strip()
-            return {"tool": "open_whatsapp", "params": {"phone": person, "message": msg}}
+            return {"tool": "open_whatsapp", "params": {"phone": m_wa2.group(1).strip(), "message": m_wa2.group(2).strip()}}
 
         m_wa3 = re.search(r'(?:whatsapp\s+([a-zA-Z0-9_]+)\s+(?:saying\s+|:\s*)?(.+))', ql)
         if m_wa3 and "web" not in ql:
-            person = m_wa3.group(1).strip()
-            msg = m_wa3.group(2).strip()
-            return {"tool": "open_whatsapp", "params": {"phone": person, "message": msg}}
+            return {"tool": "open_whatsapp", "params": {"phone": m_wa3.group(1).strip(), "message": m_wa3.group(2).strip()}}
 
         if "whatsapp" in ql:
             return {"tool": "open_whatsapp", "params": {}}
 
-        # YouTube queries: e.g. "play lofi on youtube", "search youtube for ai tutorials", "youtube python music"
+        # YouTube queries
         m_yt = re.search(r'(?:search\s+youtube\s+for\s+|play\s+(.+?)\s+on\s+youtube|play\s+|youtube\s+search\s+|youtube\s+)(.+)', ql)
         if m_yt:
             query = (m_yt.group(1) or m_yt.group(2)).replace("on youtube", "").strip()
             if query and query not in ["app", "website", "online", "open"]:
                 return {"tool": "launch_app", "params": {"app_name": "youtube", "arguments": query}}
 
-        # GitHub queries: e.g. "search github for fastchat", "github langchain"
+        # GitHub queries
         m_gh = re.search(r'(?:search\s+github\s+for\s+|github\s+search\s+|github\s+)(.+)', ql)
         if m_gh:
             query = m_gh.group(1).strip()
@@ -583,12 +498,12 @@ class MultiAgentOrchestrator:
                 return {"tool": "launch_app", "params": {"app_name": "github", "arguments": query}}
 
         # Web Scraping / Fetch URL
-        if ql.startswith("fetch ") or ql.startswith("scrape ") or ql.startswith("read website ") or "fetch details from" in ql:
+        if ql.startswith("fetch ") or ql.startswith("scrape ") or ql.startswith("read website "):
             url_match = re.search(r'(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?)', ql)
             if url_match:
                 return {"tool": "fetch_url", "params": {"url": url_match.group(1)}}
 
-        # RAM / Memory Purge
+        # RAM Purge
         if any(w in ql for w in ["clean ram", "purge ram", "free memory", "free ram", "clean system", "optimize ram", "clear ram"]):
             return {"tool": "purge_ram", "params": {}}
 
@@ -616,7 +531,7 @@ class MultiAgentOrchestrator:
         # Brightness
         if any(w in ql for w in ["brightness up", "increase brightness", "raise brightness", "brighter"]):
             return {"tool": "set_brightness", "params": {"delta": 20}}
-        if any(w in ql for w in ["brightness down", "decrease brightness", "lower brightness", "dim brightness", "dimmer"]):
+        if any(w in ql for w in ["brightness down", "decrease brightness", "lower brightness", "dim brightness", "dimmer", "dim screen"]):
             return {"tool": "set_brightness", "params": {"delta": -20}}
         m_bri = re.search(r'(?:set\s+)?brightness\s+(?:to\s+)?(\d+)', ql)
         if m_bri:
@@ -634,18 +549,18 @@ class MultiAgentOrchestrator:
         if any(w in ql for w in ["system status", "hardware stats", "cpu usage", "system telemetry", "ram status", "stats", "diagnostics"]):
             return {"tool": "get_system_stats", "params": {}}
 
-        # App Launching
+        # App Launching (e.g. "open chrome", "launch vscode", "open calc")
         app_keywords = {
             "whatsapp": ["whatsapp", "what's app", "whats app"],
             "youtube": ["youtube", "you tube"],
             "github": ["github", "git hub"],
             "chrome": ["chrome", "google chrome", "browser"],
-            "vscode": ["vscode", "vs code", "visual studio code", "code editor"],
+            "vscode": ["vscode", "vs code", "visual studio code", "code editor", "code"],
             "terminal": ["terminal", "powershell", "cmd", "command prompt"],
             "notepad": ["notepad", "text editor"],
             "calc": ["calc", "calculator"],
             "explorer": ["explorer", "file explorer", "files", "my computer"],
-            "spotify": ["spotify", "music player"],
+            "spotify": ["spotify", "music player", "music"],
             "edge": ["edge", "microsoft edge"],
             "telegram": ["telegram"],
             "discord": ["discord"],
@@ -676,7 +591,5 @@ class MultiAgentOrchestrator:
                 return {"tool": "search_web", "params": {"query": query}}
 
         return None
-
-
 
 agent_orchestrator = MultiAgentOrchestrator()

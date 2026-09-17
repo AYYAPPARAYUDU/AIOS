@@ -5,18 +5,18 @@
     </div>
     <div>
       <div class="brand-title">ABHI AIOS</div>
-      <div class="brand-subtitle">CELESTIAL PURANIC MULTI-AGENT OPERATING SYSTEM</div>
+      <div class="brand-subtitle">LOCAL-FIRST AUTONOMOUS COGNITIVE OPERATING SYSTEM</div>
     </div>
   </div>
 
   <div class="hud-status-bar">
     <div class="status-badge" [ngClass]="isConnected ? 'online' : 'busy'">
       <div class="indicator"></div>
-      <span>LLM: OLLAMA (QWEN3:8B)</span>
+      <span>LLM: QWEN3:8B (100% GPU)</span>
     </div>
     <div class="status-badge online">
-      <i class="fas fa-book-open" style="color:var(--neon-gold);"></i>
-      <span>SARASWATI VAULT: 50GB</span>
+      <i class="fas fa-vault" style="color:var(--neon-gold);"></i>
+      <span>VAULT: 50GB</span>
     </div>
     <div class="status-badge online">
       <i class="fas fa-network-wired" style="color:var(--neon-cyan);"></i>
@@ -25,15 +25,27 @@
   </div>
 
   <div class="hud-actions">
+    <!-- MULTI-AGENT SWARM TOGGLE BUTTON -->
+    <button class="btn-cyber glow-gold" [class.active]="isSwarmOpen" (click)="onToggleSwarm()">
+      <i class="fas fa-users-gear"></i>
+      <span>{{ isSwarmOpen ? 'CLOSE SWARM' : '🤖 MULTI-AGENT SWARM' }}</span>
+    </button>
+
+    <!-- QUICK TOOLS DRAWER BUTTON -->
+    <button class="btn-cyber glow-cyan" [class.active]="isToolsOpen" (click)="onToggleTools()">
+      <i class="fas fa-cubes"></i>
+      <span>{{ isToolsOpen ? 'CLOSE TOOLS' : '⚡ WORKSPACE TOOLS' }}</span>
+    </button>
+
     <button class="btn-cyber" [class.active]="audioService.speechEnabled" (click)="toggleVoice()">
       <i class="fas" [ngClass]="audioService.speechEnabled ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
-      <span>DIVINE SPEECH: {{ audioService.speechEnabled ? 'ON' : 'OFF' }}</span>
+      <span>VOICE: {{ audioService.speechEnabled ? 'ON' : 'OFF' }}</span>
     </button>
     <button class="btn-cyber" (click)="takeScreenshot()">
-      <i class="fas fa-camera"></i> HANUMAN CAPTURE
+      <i class="fas fa-camera"></i> CAPTURE
     </button>
     <button class="btn-cyber danger" (click)="lockWorkstation()">
-      <i class="fas fa-shield"></i> DURGA SHIELD
+      <i class="fas fa-shield-halved"></i> LOCK
     </button>
   </div>
 </header>

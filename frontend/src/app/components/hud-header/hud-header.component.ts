@@ -13,12 +13,26 @@ import { JarvisApiService } from '../../core/services/jarvis-api.service';
 export class HudHeaderComponent {
   @Input() isConnected: boolean = false;
   @Input() netSpeedText: string = 'NET: ACTIVE';
+  @Input() isSwarmOpen: boolean = false;
+  @Input() isToolsOpen: boolean = false;
   @Output() screenshotCaptured = new EventEmitter<string>();
+  @Output() toggleSwarm = new EventEmitter<void>();
+  @Output() toggleTools = new EventEmitter<void>();
 
   constructor(
     public audioService: JarvisAudioService,
     private apiService: JarvisApiService
   ) {}
+
+  onToggleSwarm(): void {
+    this.audioService.playSciFiTone('beep');
+    this.toggleSwarm.emit();
+  }
+
+  onToggleTools(): void {
+    this.audioService.playSciFiTone('beep');
+    this.toggleTools.emit();
+  }
 
   toggleVoice(): void {
     this.audioService.speechEnabled = !this.audioService.speechEnabled;

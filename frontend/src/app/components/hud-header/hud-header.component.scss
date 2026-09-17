@@ -122,6 +122,32 @@
     box-shadow: 0 0 10px var(--neon-gold);
   }
 
+  &.glow-gold {
+    border-color: var(--neon-gold);
+    color: var(--neon-gold);
+    background: rgba(255, 215, 0, 0.2);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+
+    &:hover, &.active {
+      background: var(--neon-gold);
+      color: #000;
+      box-shadow: 0 0 16px rgba(255, 215, 0, 0.8);
+    }
+  }
+
+  &.glow-cyan {
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    background: rgba(0, 240, 255, 0.15);
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+
+    &:hover, &.active {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.8);
+    }
+  }
+
   &.danger {
     border-color: var(--neon-crimson);
     color: var(--neon-crimson);

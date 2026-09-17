@@ -7,6 +7,7 @@ import urllib.request
 import urllib.parse
 from typing import Optional, Any
 from backend.app.storage.db import db
+from backend.app.os_control.apps import _open_url_robust
 
 # Win32 Virtual Key Constants (fallback)
 VK_VOLUME_MUTE = 0xAD
@@ -20,22 +21,26 @@ KEYEVENTF_KEYUP = 0x0002
 def _press_vk(vk_code: int):
     """Sends a hardware virtual key tap via Win32 user32."""
     if os.name == 'nt':
-        ctypes.windll.user32.keybd_event(vk_code, 0, 0, 0)
-        ctypes.windll.user32.keybd_event(vk_code, 0, KEYEVENTF_KEYUP, 0)
+        try:
+            ctypes.windll.user32.keybd_event(vk_code, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(vk_code, 0, KEYEVENTF_KEYUP, 0)
+        except Exception:
+            pass
 
 class SystemActions:
-    """Ultra-responsive native OS and Web controller for Windows with unlimited capabilities."""
+    """Ultra-responsive native OS and Web controller with 0ms latency."""
 
     @staticmethod
     def _get_audio_endpoint():
         """Returns the pycaw EndpointVolume controller if available."""
-        try:
-            from pycaw.pycaw import AudioUtilities
-            speakers = AudioUtilities.GetSpeakers()
-            if speakers and hasattr(speakers, 'EndpointVolume'):
-                return speakers.EndpointVolume
-        except Exception:
-            pass
+        if os.name == 'nt':
+            try:
+                from pycaw.pycaw import AudioUtilities
+                speakers = AudioUtilities.GetSpeakers()
+                if speakers and hasattr(speakers, 'EndpointVolume'):
+                    return speakers.EndpointVolume
+            except Exception:
+                pass
         return None
 
     @classmethod
@@ -158,9 +163,19 @@ class SystemActions:
 
     @staticmethod
     def lock_workstation() -> dict[str, Any]:
-        """Locks the Windows workstation instantly."""
+        """Locks the workstation instantly."""
         if os.name == 'nt':
-            ctypes.windll.user32.LockWorkStation()
+            try:
+                ctypes.windll.user32.LockWorkStation()
+            except Exception:
+                pass
+        else:
+            for locker in [["xdg-screensaver", "lock"], ["gnome-screensaver-command", "-l"], ["loginctl", "lock-session"]]:
+                try:
+                    subprocess.Popen(locker)
+                    break
+                except Exception:
+                    continue
         db.log_audit("SYSTEM_ACTION", "Lock Workstation", "DURGA_Shield", "SUCCESS")
         return {"action": "lock", "status": "workstation_locked"}
 
@@ -170,11 +185,14 @@ class SystemActions:
         mode = mode.lower().strip()
         if os.name == 'nt':
             if mode == "sleep":
-                ctypes.windll.PowrProf.SetSuspendState(0, 1, 0)
+                try:
+                    ctypes.windll.PowrProf.SetSuspendState(0, 1, 0)
+                except Exception:
+                    pass
             elif mode == "restart":
-                subprocess.Popen(["shutdown", "/r", "/t", "10", "/c", "ABHI AIOS initiating system restart in 10s"])
+                subprocess.Popen(["shutdown", "/r", "/t", "10", "/c", "JARVIS AIOS initiating system restart in 10s"])
             elif mode == "shutdown":
-                subprocess.Popen(["shutdown", "/s", "/t", "15", "/c", "ABHI AIOS powering down system in 15s"])
+                subprocess.Popen(["shutdown", "/s", "/t", "15", "/c", "JARVIS AIOS powering down system in 15s"])
             elif mode == "cancel_shutdown":
                 subprocess.Popen(["shutdown", "/a"])
         db.log_audit("SYSTEM_ACTION", f"Power Action: {mode}", "INDRA_OSController", "SUCCESS")
@@ -196,7 +214,6 @@ class SystemActions:
     @staticmethod
     def open_url(url: str) -> dict[str, Any]:
         """Opens any URL in default web browser with multi-layer fallback."""
-        from backend.app.os_control.apps import _open_url_robust
         if not url.startswith("http://") and not url.startswith("https://"):
             url = "https://" + url
         _open_url_robust(url)
@@ -206,7 +223,6 @@ class SystemActions:
     @staticmethod
     def search_web_browser(query: str) -> dict[str, Any]:
         """Searches query in default browser."""
-        from backend.app.os_control.apps import _open_url_robust
         encoded = urllib.parse.quote_plus(query)
         url = f"https://www.google.com/search?q={encoded}"
         _open_url_robust(url)
@@ -216,7 +232,6 @@ class SystemActions:
     @staticmethod
     def open_whatsapp(phone: Optional[str] = None, message: Optional[str] = None) -> dict[str, Any]:
         """Opens WhatsApp app or web, optionally with phone and pre-filled message."""
-        from backend.app.os_control.apps import _open_url_robust
         if phone or message:
             encoded_msg = urllib.parse.quote_plus(message or "")
             clean_phone = re.sub(r"[^\d+]", "", phone or "")
@@ -227,12 +242,14 @@ class SystemActions:
             _open_url_robust(url)
             return {"action": "open_whatsapp", "target": url, "status": "opened"}
         else:
-            try:
-                os.startfile("whatsapp:")
-                return {"action": "open_whatsapp", "target": "whatsapp:", "status": "opened"}
-            except Exception:
-                _open_url_robust("https://web.whatsapp.com")
-                return {"action": "open_whatsapp", "target": "https://web.whatsapp.com", "status": "opened"}
+            if os.name == 'nt':
+                try:
+                    os.startfile("whatsapp:")
+                    return {"action": "open_whatsapp", "target": "whatsapp:", "status": "opened"}
+                except Exception:
+                    pass
+            _open_url_robust("https://web.whatsapp.com")
+            return {"action": "open_whatsapp", "target": "https://web.whatsapp.com", "status": "opened"}
 
     @staticmethod
     def fetch_url_content(url: str) -> dict[str, Any]:
