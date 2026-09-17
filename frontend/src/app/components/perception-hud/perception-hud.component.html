@@ -1,0 +1,58 @@
+<div class="perception-card">
+  <div class="card-header">
+    <div class="title-group">
+      <span class="live-dot" [class.active]="cameraActive"></span>
+      <h4>👁️ MULTI-MODAL NEURAL SENSORS</h4>
+    </div>
+    <div class="controls">
+      <button class="sensor-btn" [class.on]="cameraActive" (click)="toggleCamera()">
+        {{ cameraActive ? '📷 CAM ACTIVE' : '📷 ENABLE CAM' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="sensors-layout">
+    <!-- Camera Feed Viewport with Overlay -->
+    <div class="video-container">
+      <video #videoPlayer autoplay playsinline muted class="camera-feed" [class.hidden]="!cameraActive"></video>
+      <div class="camera-offline" *ngIf="!cameraActive">
+        <div class="scan-grid"></div>
+        <div class="offline-text">OPTICAL SENSORS STANDBY</div>
+      </div>
+      <canvas #canvasOverlay width="320" height="240" class="overlay-canvas"></canvas>
+    </div>
+
+    <!-- Emotion & Audio Resonance Panel -->
+    <div class="telemetry-panel">
+      <!-- Dominant Emotion & Mirroring -->
+      <div class="mirror-box">
+        <div class="mirror-title">CLONE EMOTIONAL MIRROR</div>
+        <div class="dominant-tag">
+          <span>USER STATE:</span>
+          <strong class="text-pink">{{ perceptionState.dominant_emotion }}</strong>
+        </div>
+        <p class="mirror-narrative">"{{ perceptionState.clone_mirror_response }}"</p>
+      </div>
+
+      <!-- Emotion Breakdown Bars -->
+      <div class="emotion-bars">
+        <div class="emotion-row" *ngFor="let emotion of getEmotionKeys()">
+          <span class="name">{{ emotion }}</span>
+          <div class="bar-bg">
+            <div class="bar-fill" [style.width.%]="perceptionState.emotion_scores[emotion] * 100"></div>
+          </div>
+          <span class="pct">{{ (perceptionState.emotion_scores[emotion] * 100) | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+
+      <!-- Live Mic Audio Visualizer -->
+      <div class="mic-section">
+        <div class="mic-meta">
+          <span>🎤 AUDIO SPECTRUM ({{ perceptionState.audio_decibel_avg }} dB)</span>
+          <span class="tone-tag">{{ perceptionState.speech_tone }}</span>
+        </div>
+        <canvas #micWaveform width="280" height="36" class="wave-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>

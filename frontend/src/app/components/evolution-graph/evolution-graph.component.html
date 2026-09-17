@@ -1,0 +1,141 @@
+<div class="evolution-container">
+  <div class="matrix-header">
+    <div class="title-cluster">
+      <div class="pulse-orb"></div>
+      <div>
+        <h3>📈 NEURAL CLONE EVOLUTION MATRIX</h3>
+        <p class="subtitle">Continuous Autonomous Micro-Learning & Day-by-Day Mastery Analytics</p>
+      </div>
+    </div>
+
+    <div class="view-toggles">
+      <button [class.active]="activeView === 'daily'" (click)="setView('daily')">📅 DAY-BY-DAY</button>
+      <button [class.active]="activeView === 'monthly'" (click)="setView('monthly')">🌌 MONTHLY GROWTH</button>
+      <button [class.active]="activeView === 'sectors'" (click)="setView('sectors')">🎯 SECTOR RADAR</button>
+    </div>
+  </div>
+
+  <!-- Snapshot KPIs -->
+  <div class="kpi-grid" *ngIf="evolutionData?.current_snapshot as snap">
+    <div class="kpi-card">
+      <span class="label">LEARNING VELOCITY</span>
+      <div class="val text-cyan">{{ snap.learning_velocity_pct }}%</div>
+      <div class="sub">Continuous Ingestion Loop</div>
+    </div>
+    <div class="kpi-card">
+      <span class="label">AVERAGE MASTERY</span>
+      <div class="val text-pink">{{ snap.average_mastery }}%</div>
+      <div class="sub">Cross-Sector Alignment</div>
+    </div>
+    <div class="kpi-card">
+      <span class="label">LOSS CONVERGENCE</span>
+      <div class="val text-green">{{ snap.loss_convergence }}</div>
+      <div class="sub">Self-Correction Equilibrium</div>
+    </div>
+    <div class="kpi-card">
+      <span class="label">ACTIVE SYNAPSES</span>
+      <div class="val text-yellow">{{ snap.neural_synapses_active | number }}</div>
+      <div class="sub">{{ snap.vram_allocation_gpu }}</div>
+    </div>
+  </div>
+
+  <!-- Daily History Graph View -->
+  <div class="graph-section" *ngIf="activeView === 'daily'">
+    <div class="chart-box">
+      <div class="chart-title">
+        <span>⚡ 30-Day Autonomous Learning Velocity & Mastery Curve</span>
+        <span class="badge-live">LIVE EVOLVING</span>
+      </div>
+      
+      <div class="svg-wrapper">
+        <svg class="chart-svg" viewBox="0 0 900 240" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="curveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#00f0ff" stop-opacity="0.0"/>
+            </linearGradient>
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#7928ca"/>
+              <stop offset="50%" stop-color="#00f0ff"/>
+              <stop offset="100%" stop-color="#00ff66"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Grid lines -->
+          <line x1="0" y1="60" x2="900" y2="60" stroke="rgba(255,255,255,0.05)" />
+          <line x1="0" y1="120" x2="900" y2="120" stroke="rgba(255,255,255,0.05)" />
+          <line x1="0" y1="180" x2="900" y2="180" stroke="rgba(255,255,255,0.05)" />
+
+          <!-- Dynamic points from daily history -->
+          <g *ngIf="evolutionData?.daily_history">
+            <path [attr.d]="'M 0 200 ' + 
+                            'Q 200 180, 350 120 ' + 
+                            'T 600 70 ' + 
+                            'T 900 30 L 900 240 L 0 240 Z'" 
+                  fill="url(#curveGrad)" />
+                  
+            <path [attr.d]="'M 0 200 ' + 
+                            'Q 200 180, 350 120 ' + 
+                            'T 600 70 ' + 
+                            'T 900 30'" 
+                  fill="none" stroke="url(#lineGrad)" stroke-width="3.5" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="day-timeline">
+        <div class="day-pill" *ngFor="let d of evolutionData?.daily_history | slice:-7">
+          <div class="date">{{ d.date }}</div>
+          <div class="score text-cyan">{{ d.average_mastery }}%</div>
+          <div class="tokens">{{ (d.tokens_processed / 1000) | number:'1.0-0' }}k tok</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Trajectory View -->
+  <div class="graph-section" *ngIf="activeView === 'monthly'">
+    <div class="monthly-grid">
+      <div class="month-card" *ngFor="let m of evolutionData?.monthly_timeline">
+        <div class="month-name">{{ m.month }}</div>
+        <div class="metric-row">
+          <span>IQ Equivalent</span>
+          <strong class="text-cyan">{{ m.overall_iq_equivalent }}</strong>
+        </div>
+        <div class="metric-row">
+          <span>Coding Mastery</span>
+          <strong class="text-pink">{{ m.coding_mastery }}%</strong>
+        </div>
+        <div class="metric-row">
+          <span>Empathy Index</span>
+          <strong class="text-green">{{ m.empathy_index }}%</strong>
+        </div>
+        <div class="metric-row">
+          <span>Actions Done</span>
+          <span class="text-yellow">{{ m.actions_executed | number }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sector Radar Distribution View -->
+  <div class="graph-section" *ngIf="activeView === 'sectors'">
+    <div class="sectors-grid">
+      <div class="sector-card" 
+           *ngFor="let s of evolutionData?.radar_distribution" 
+           [style.border-color]="s.color">
+        <div class="sector-icon">{{ s.icon }}</div>
+        <div class="sector-info">
+          <div class="sector-name">{{ s.name }}</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width.%]="s.current_score" [style.background-color]="s.color"></div>
+          </div>
+          <div class="sector-score">
+            <span>Score: <strong [style.color]="s.color">{{ s.current_score }}%</strong></span>
+            <span>Target: 100%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,9 +1,15 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query
 from pydantic import BaseModel
 from typing import Optional, Any
-from backend.app.storage.manager import storage_mgr
 
-router = APIRouter(prefix="/api/storage", tags=["50GB Local Storage DB"])
+try:
+    from backend.app.storage.manager import storage_mgr
+    from backend.app.storage.capacity_monitor import capacity_monitor
+except ImportError:
+    from app.storage.manager import storage_mgr
+    from app.storage.capacity_monitor import capacity_monitor
+
+router = APIRouter(prefix="/api/storage", tags=["Dynamic 200GB Storage Vault & Sentinel"])
 
 class IndexDirectoryRequest(BaseModel):
     directory_path: str
@@ -12,9 +18,22 @@ class IndexDirectoryRequest(BaseModel):
 class SearchRequest(BaseModel):
     query: str
 
+class ExpandStorageRequest(BaseModel):
+    additional_gb: Optional[float] = 100.0
+
 @router.get("/stats")
 async def get_storage_stats():
     return storage_mgr.get_pool_stats()
+
+@router.get("/capacity")
+async def get_capacity_stats():
+    """Returns dynamic 200GB capacity breakdown and checks if limits are near to alert the user."""
+    return capacity_monitor.check_capacity()
+
+@router.post("/expand")
+async def expand_vault_storage(req: ExpandStorageRequest):
+    """Expands storage allocation dynamically."""
+    return capacity_monitor.expand_storage(req.additional_gb or 100.0)
 
 @router.get("/files")
 async def list_files(subfolder: str = Query(default="")):

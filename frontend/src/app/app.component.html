@@ -5,8 +5,16 @@
     [netSpeedText]="netSpeedText"
     [isSwarmOpen]="isSwarmDrawerOpen"
     [isToolsOpen]="isToolsDrawerOpen"
+    [isEvolutionOpen]="isEvolutionModalOpen"
+    [isPerceptionOpen]="isPerceptionModalOpen"
+    [isMediaOpen]="isMediaModalOpen"
+    [storageAlert]="storageAlert"
     (toggleSwarm)="toggleSwarmDrawer()"
     (toggleTools)="toggleToolsDrawer()"
+    (toggleEvolution)="toggleEvolution()"
+    (togglePerception)="togglePerception()"
+    (toggleMedia)="toggleMedia()"
+    (expandStorage)="onExpandStorage()"
     (screenshotCaptured)="onScreenshotCaptured($event)"
   ></app-hud-header>
 
@@ -49,14 +57,48 @@
     </section>
   </main>
 
-  <!-- SLIDE-OUT CYBER DRAWER: MULTI-AGENT SWARM -->
-  <div class="drawer-backdrop" *ngIf="isSwarmDrawerOpen || isToolsDrawerOpen" (click)="closeAllDrawers()"></div>
+  <!-- MODAL / OVERLAY BACKDROP -->
+  <div class="drawer-backdrop" 
+       *ngIf="isSwarmDrawerOpen || isToolsDrawerOpen || isEvolutionModalOpen || isPerceptionModalOpen || isMediaModalOpen" 
+       (click)="closeAllDrawers()">
+  </div>
 
+  <!-- MODAL 1: EVOLUTION MATRIX MODAL -->
+  <div class="cyber-modal evolution-modal" *ngIf="isEvolutionModalOpen">
+    <div class="modal-top">
+      <button class="btn-close-modal" (click)="toggleEvolution()">
+        <i class="fas fa-times"></i> CLOSE MATRIX
+      </button>
+    </div>
+    <app-evolution-graph></app-evolution-graph>
+  </div>
+
+  <!-- MODAL 2: MULTI-MODAL PERCEPTION SENSORS MODAL -->
+  <div class="cyber-modal perception-modal" *ngIf="isPerceptionModalOpen">
+    <div class="modal-top">
+      <button class="btn-close-modal" (click)="togglePerception()">
+        <i class="fas fa-times"></i> CLOSE SENSORS
+      </button>
+    </div>
+    <app-perception-hud></app-perception-hud>
+  </div>
+
+  <!-- MODAL 3: GENERATIVE MEDIA LAB MODAL -->
+  <div class="cyber-modal media-modal" *ngIf="isMediaModalOpen">
+    <div class="modal-top">
+      <button class="btn-close-modal" (click)="toggleMedia()">
+        <i class="fas fa-times"></i> CLOSE MEDIA LAB
+      </button>
+    </div>
+    <app-media-hub></app-media-hub>
+  </div>
+
+  <!-- SLIDE-OUT CYBER DRAWER: MULTI-AGENT SWARM -->
   <aside class="cyber-drawer" [class.open]="isSwarmDrawerOpen">
     <div class="drawer-header">
       <div class="drawer-title">
         <i class="fas fa-users-gear glow-gold"></i>
-        <span>PURANIC DEITY SWARM</span>
+        <span>PURANIC DEITY SWARM & CLONE</span>
       </div>
       <button class="btn-close-drawer" (click)="toggleSwarmDrawer()">
         <i class="fas fa-times"></i>
@@ -71,7 +113,7 @@
     </div>
   </aside>
 
-  <!-- SLIDE-OUT CYBER DRAWER: WORKSPACE TOOLS (Contacts, 50GB Vault, Processes, Terminal) -->
+  <!-- SLIDE-OUT CYBER DRAWER: WORKSPACE TOOLS -->
   <aside class="cyber-drawer" [class.open]="isToolsDrawerOpen">
     <div class="drawer-header">
       <div class="drawer-title">
@@ -88,7 +130,7 @@
           <i class="fab fa-whatsapp"></i> CONTACTS
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'storage'" (click)="setTab('storage')">
-          <i class="fas fa-vault"></i> 50GB VAULT
+          <i class="fas fa-vault"></i> 200GB VAULT
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'processes'" (click)="setTab('processes')">
           <i class="fas fa-shield-halved"></i> PROCESSES

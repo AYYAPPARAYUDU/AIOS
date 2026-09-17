@@ -12,40 +12,65 @@
   <div class="hud-status-bar">
     <div class="status-badge" [ngClass]="isConnected ? 'online' : 'busy'">
       <div class="indicator"></div>
-      <span>LLM: QWEN3:8B (100% GPU)</span>
+      <span>LLM: ABHI (100% GPU)</span>
     </div>
-    <div class="status-badge online">
-      <i class="fas fa-fingerprint" style="color:#76ff03;"></i>
-      <span>CLONE: 🧬 SELF-LEARNING</span>
+    <div class="status-badge online clickable" (click)="onToggleEvolution()">
+      <i class="fas fa-chart-line" style="color:#00f0ff;"></i>
+      <span>CLONE: 🧬 EVOLVING (98% VELOCITY)</span>
     </div>
-    <div class="status-badge online">
-      <i class="fas fa-network-wired" style="color:var(--neon-cyan);"></i>
-      <span>{{ netSpeedText }}</span>
+    <div class="status-badge online clickable" (click)="onTogglePerception()">
+      <i class="fas fa-eye" style="color:#ff007f;"></i>
+      <span>SENSORS: 👁️ CAM & MIC</span>
+    </div>
+    <div class="status-badge online" *ngIf="!storageAlert">
+      <i class="fas fa-vault" style="color:#00ff66;"></i>
+      <span>STORAGE: 200GB VAULT</span>
+    </div>
+    <div class="status-badge alert clickable" *ngIf="storageAlert" (click)="onExpandStorage()">
+      <i class="fas fa-triangle-exclamation" style="color:#ffaa00;"></i>
+      <span>{{ storageAlert }}</span>
     </div>
   </div>
 
   <div class="hud-actions">
+    <!-- EVOLUTION MATRIX BUTTON -->
+    <button class="btn-cyber glow-cyan" [class.active]="isEvolutionOpen" (click)="onToggleEvolution()">
+      <i class="fas fa-chart-line"></i>
+      <span>{{ isEvolutionOpen ? 'CLOSE MATRIX' : '📈 EVOLUTION' }}</span>
+    </button>
+
+    <!-- MULTI-MODAL SENSORS BUTTON -->
+    <button class="btn-cyber glow-pink" [class.active]="isPerceptionOpen" (click)="onTogglePerception()">
+      <i class="fas fa-eye"></i>
+      <span>{{ isPerceptionOpen ? 'CLOSE SENSORS' : '👁️ SENSORS' }}</span>
+    </button>
+
+    <!-- GENERATIVE MEDIA LAB BUTTON -->
+    <button class="btn-cyber glow-purple" [class.active]="isMediaOpen" (click)="onToggleMedia()">
+      <i class="fas fa-palette"></i>
+      <span>{{ isMediaOpen ? 'CLOSE MEDIA' : '🎨 MEDIA LAB' }}</span>
+    </button>
+
     <!-- MULTI-AGENT SWARM TOGGLE BUTTON -->
     <button class="btn-cyber glow-gold" [class.active]="isSwarmOpen" (click)="onToggleSwarm()">
       <i class="fas fa-users-gear"></i>
-      <span>{{ isSwarmOpen ? 'CLOSE SWARM' : '🤖 MULTI-AGENT SWARM' }}</span>
+      <span>{{ isSwarmOpen ? 'CLOSE SWARM' : '🤖 SWARM' }}</span>
     </button>
 
     <!-- QUICK TOOLS DRAWER BUTTON -->
-    <button class="btn-cyber glow-cyan" [class.active]="isToolsOpen" (click)="onToggleTools()">
+    <button class="btn-cyber" [class.active]="isToolsOpen" (click)="onToggleTools()">
       <i class="fas fa-cubes"></i>
-      <span>{{ isToolsOpen ? 'CLOSE TOOLS' : '⚡ WORKSPACE TOOLS' }}</span>
+      <span>{{ isToolsOpen ? 'CLOSE TOOLS' : '⚡ TOOLS' }}</span>
     </button>
 
     <button class="btn-cyber" [class.active]="audioService.speechEnabled" (click)="toggleVoice()">
       <i class="fas" [ngClass]="audioService.speechEnabled ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
-      <span>VOICE: {{ audioService.speechEnabled ? 'ON' : 'OFF' }}</span>
     </button>
     <button class="btn-cyber" (click)="takeScreenshot()">
-      <i class="fas fa-camera"></i> CAPTURE
+      <i class="fas fa-camera"></i>
     </button>
     <button class="btn-cyber danger" (click)="lockWorkstation()">
-      <i class="fas fa-shield-halved"></i> LOCK
+      <i class="fas fa-shield-halved"></i>
     </button>
   </div>
 </header>

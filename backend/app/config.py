@@ -14,10 +14,10 @@ class Settings(BaseSettings):
     PORT: int = 8000
     CORS_ORIGINS: list[str] = ["*"]
     
-    # Ollama LLM Settings
+    # Ollama Custom LLM Settings (ABHI - Supreme Autonomous Cognitive OS)
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
-    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen3:8b")
-    OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "qwen3:8b")
+    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "abhi")
+    OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "abhi")
     OLLAMA_TIMEOUT: float = 120.0
     
     # Local Storage Pool (200GB Local Storage DB)

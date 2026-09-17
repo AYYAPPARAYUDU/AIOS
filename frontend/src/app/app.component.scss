@@ -83,17 +83,74 @@
   min-height: 0;
 }
 
-/* Cyber Slide-Out Drawers */
+/* Cyber Slide-Out Drawers & Modals */
 .drawer-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(3, 7, 18, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(3, 7, 18, 0.75);
+  backdrop-filter: blur(10px);
   z-index: 998;
   animation: fadeIn 0.25s ease-out;
+}
+
+.cyber-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  max-width: 94vw;
+  max-height: 88vh;
+  background: rgba(10, 15, 29, 0.98);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(0, 240, 255, 0.2);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.perception-modal {
+    width: 780px;
+    border-color: rgba(121, 40, 202, 0.5);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(121, 40, 202, 0.3);
+  }
+
+  &.media-modal {
+    width: 860px;
+    border-color: rgba(255, 0, 127, 0.5);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 0, 127, 0.3);
+  }
+
+  .modal-top {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+
+    .btn-close-modal {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: var(--neon-crimson);
+        color: #fff;
+        background: rgba(236, 72, 153, 0.3);
+      }
+    }
+  }
 }
 
 .cyber-drawer {
@@ -229,6 +286,11 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: translate(-50%, -48%) scale(0.96); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
 /* Responsive Breakpoints */

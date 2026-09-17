@@ -1,0 +1,69 @@
+<div class="media-hub-card">
+  <div class="hub-header">
+    <div class="title-wrap">
+      <span class="sparkle">🎨</span>
+      <h4>MULTI-MODAL GENERATIVE MEDIA LAB</h4>
+    </div>
+    <div class="type-selector">
+      <button [class.active]="mediaType === 'image'" (click)="mediaType = 'image'">🖼️ 4K IMAGE</button>
+      <button [class.active]="mediaType === 'video'" (click)="mediaType = 'video'">🎬 PROCEDURAL VIDEO</button>
+    </div>
+  </div>
+
+  <div class="hub-body">
+    <!-- Prompt Input & Configurator -->
+    <div class="generation-form">
+      <div class="input-row">
+        <input type="text" 
+               [(ngModel)]="promptText" 
+               placeholder="Describe generative vision (e.g., 'Cybernetic quantum neural network core in deep space with purple glowing rings')..." 
+               (keyup.enter)="generateMedia()"
+               class="prompt-input" />
+        <button class="gen-btn" [disabled]="!promptText.trim() || isGenerating" (click)="generateMedia()">
+          {{ isGenerating ? '⚡ SYNTHESIZING...' : '✨ GENERATE' }}
+        </button>
+      </div>
+
+      <div class="options-row" *ngIf="mediaType === 'image'">
+        <div class="opt-group">
+          <label>STYLE:</label>
+          <select [(ngModel)]="selectedStyle">
+            <option *ngFor="let s of styles" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <label>RATIO:</label>
+          <select [(ngModel)]="aspectRatio">
+            <option value="16:9">16:9 Widescreen (4K)</option>
+            <option value="1:1">1:1 Square (HUD Avatar)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Generation Output -->
+    <div class="preview-stage" *ngIf="lastGeneratedMedia">
+      <div class="preview-header">
+        <span>GENERATED ASSET: {{ lastGeneratedMedia.filename }}</span>
+        <span class="badge">{{ lastGeneratedMedia.resolution || '1080p Neural Stream' }}</span>
+      </div>
+      <div class="media-display">
+        <img *ngIf="lastGeneratedMedia.type === 'image'" [src]="getMediaUrl(lastGeneratedMedia.url)" alt="Generated Preview" class="active-image" />
+        <div *ngIf="lastGeneratedMedia.type === 'video'" class="video-placeholder">
+          <div class="video-icon">🎬</div>
+          <div class="video-desc">Neural Video Stream Rendered: {{ lastGeneratedMedia.prompt }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gallery Thumbnails -->
+    <div class="gallery-section">
+      <div class="gallery-title">📁 GENERATED VAULT ARCHIVE ({{ gallery.total_items || 0 }} ASSETS)</div>
+      <div class="gallery-grid">
+        <div class="gallery-item" *ngFor="let img of gallery.images | slice:0:6">
+          <img [src]="getMediaUrl(img.url)" [alt]="img.filename" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

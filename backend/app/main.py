@@ -5,16 +5,32 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
 from backend.app.config import settings
 from backend.app.core.llm import ollama_client
-from backend.app.routes import api_system, api_agents, api_storage, api_voice, api_clone, api_mcp, ws_hub
+from backend.app.clone.continuous_learner import continuous_learner
+from backend.app.core.media_generator import IMAGES_DIR, VIDEOS_DIR
+from backend.app.routes import (
+    api_system,
+    api_agents,
+    api_storage,
+    api_voice,
+    api_clone,
+    api_mcp,
+    api_media,
+    api_code,
+    ws_hub
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Pre-warm Ollama model onto GPU immediately
     asyncio.create_task(ollama_client.warm_up())
+    # Startup: Launch continuous background micro-learning loop
+    asyncio.create_task(continuous_learner.start())
     yield
     # Shutdown
+    await continuous_learner.stop()
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -42,7 +58,8 @@ async def health_check():
         "version": settings.VERSION,
         "model": settings.OLLAMA_MODEL,
         "storage_pool_gb": round(settings.STORAGE_MAX_BYTES / (1024**3), 1),
-        "clone_engine": "active_evolving"
+        "clone_engine": "active_evolving",
+        "continuous_learner": "active"
     }
 
 # Include API Routers
@@ -52,9 +69,11 @@ app.include_router(api_storage.router)
 app.include_router(api_voice.router)
 app.include_router(api_clone.router)
 app.include_router(api_mcp.router)
+app.include_router(api_media.router)
+app.include_router(api_code.router)
 app.include_router(ws_hub.router)
 
-# Serve storage files and screenshots
+# Serve storage files, screenshots and media
 app.mount("/static/screenshots", StaticFiles(directory=str(settings.SCREENSHOTS_DIR)), name="screenshots")
 app.mount("/static/storage", StaticFiles(directory=str(settings.STORAGE_POOL_DIR)), name="storage")
 
