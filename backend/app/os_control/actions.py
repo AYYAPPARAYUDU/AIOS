@@ -230,21 +230,13 @@ class SystemActions:
         return {"action": "search_web", "query": query, "url": url, "status": "opened"}
 
     @staticmethod
-    def open_whatsapp(phone: Optional[str] = None, message: Optional[str] = None) -> dict[str, Any]:
-        """Opens WhatsApp app or web, optionally with phone and pre-filled message."""
+    def open_whatsapp(phone: Optional[str] = None, message: Optional[str] = None, auto_send: bool = True) -> dict[str, Any]:
+        """Opens WhatsApp app or web with native OS control, contact search, and message automation."""
+        from backend.app.os_control.whatsapp import whatsapp_controller
         if phone or message:
-            encoded_msg = urllib.parse.quote_plus(message or "")
-            clean_phone = re.sub(r"[^\d+]", "", str(phone or ""))
-            if clean_phone:
-                url = f"https://web.whatsapp.com/send?phone={clean_phone}&text={encoded_msg}"
-            else:
-                url = f"https://web.whatsapp.com/send?text={encoded_msg}"
-            _open_url_robust(url)
-            return {"action": "open_whatsapp", "target": url, "status": "opened"}
+            return whatsapp_controller.send_whatsapp_message(recipient=phone, message=message, auto_send=auto_send)
         else:
-            url = "https://web.whatsapp.com"
-            _open_url_robust(url)
-            return {"action": "open_whatsapp", "target": url, "status": "opened"}
+            return whatsapp_controller.launch_whatsapp()
 
     @staticmethod
     def fetch_url_content(url: str) -> dict[str, Any]:

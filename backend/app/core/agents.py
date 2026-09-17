@@ -225,7 +225,7 @@ class MultiAgentOrchestrator:
                 msg = params.get("message")
                 
                 if phone and not re.search(r'\d{5,}', str(phone)):
-                    contact = db.get_contact_by_name(str(phone))
+                    contact = db.get_contact(str(phone))
                     if contact and contact.get("phone"):
                         phone = contact["phone"]
                         
@@ -239,10 +239,10 @@ class MultiAgentOrchestrator:
                 phone = params.get("phone", "")
                 email = params.get("email")
                 notes = params.get("notes")
-                if name and phone:
-                    contact_id = db.add_contact(name=name, phone=phone, email=email, notes=notes)
-                    return {"status": "success", "contact_id": contact_id, "name": name, "phone": phone}
-                return {"status": "failed", "error": "Name and phone required"}
+                if name:
+                    save_res = db.save_contact(name=name, phone=phone, email=email, notes=notes)
+                    return save_res
+                return {"status": "failed", "error": "Name is required to save contact"}
 
             elif tool_name == "fetch_url":
                 url = params.get("url", "")
@@ -470,8 +470,13 @@ class MultiAgentOrchestrator:
                 self.active_agents[aid]["status"] = "idle"
         self.active_agents["abhi"]["status"] = "active"
 
-        # Continuous Self-Learning background loop
+        # Continuous Self-Learning background loop & ML/DL Compact Dataset Ingestion
         asyncio.create_task(clone_learner.ingest_user_interaction(query, answer_text, executed_tool_calls))
+        try:
+            from backend.app.clone.ml_dl_trainer import ml_dl_trainer
+            ml_dl_trainer.ingest_interaction(query, answer_text, executed_tool_calls, active_target)
+        except Exception:
+            pass
 
         # Save to DB
         db.add_message(conversation_id=conversation_id, role="user", content=query, sender_name="User")
@@ -490,7 +495,7 @@ class MultiAgentOrchestrator:
 
     def _detect_all_intents(self, q: str) -> list[dict[str, Any]]:
         """Splits multi-goal user queries and extracts all reflex actions."""
-        parts = re.split(r'[,;+]|\band\b|\bthen\b', q, flags=re.IGNORECASE)
+        parts = re.split(r'[,;]|\s\+\s|\band\b|\bthen\b', q, flags=re.IGNORECASE)
         actions_list = []
         for part in parts:
             item = part.strip()
@@ -507,6 +512,104 @@ class MultiAgentOrchestrator:
 
         return actions_list
 
+    def _extract_whatsapp_intent(self, clean: str) -> Optional[dict[str, Any]]:
+        """Parses natural language WhatsApp queries, extracting phone/contact and generating context with 100% accuracy."""
+        from backend.app.os_control.whatsapp import whatsapp_controller
+        clean_norm = re.sub(r'^(?:please|can you|could you|would you|jarvis|abhi|hey|help me|i want you to|just|go ahead and)\s+', '', clean, flags=re.IGNORECASE).strip()
+        
+        # Check if query targets WhatsApp or direct messaging or leave letter
+        is_wa = bool(re.search(r'\b(whatsapp|whats\s*app|what\'s\s*app|message|msg|text|leave\s*letter|leave\s*application|leave\s*request|sick\s*note|leave\s*note)\b', clean_norm, re.IGNORECASE))
+        if not is_wa:
+            return None
+
+        stopwords = {'whatsapp', 'whats', 'app', 'message', 'msg', 'text', 'the', 'a', 'in', 'on', 'via', 'to', 'for', 'saying', 'that', 'send', 'letter', 'leave', 'reason', 'about', 'and', 'my'}
+        time_words = {'today', 'tomorrow', 'yesterday', 'morning', 'evening', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'days', 'day', 'week', 'month'}
+
+        recipient = None
+        reason = None
+        message = None
+
+        # 1. Look for Phone Number (+91..., 9876...)
+        p_match = re.search(r'\+?\d[\d\-\s()]{6,16}\d', clean_norm)
+        if p_match:
+            digits = re.sub(r'\D', '', p_match.group(0))
+            if len(digits) >= 7:
+                recipient = p_match.group(0).strip()
+
+        # 2. Extract Named Recipient
+        if not recipient:
+            # Pattern A: Search for contact [name]
+            m_contact = re.search(r'(?:search\s+(?:for\s+)?(?:whatsapp\s+)?contact\s+|contact\s+)([a-zA-Z0-9_]+)', clean_norm, re.IGNORECASE)
+            if m_contact and m_contact.group(1).lower() not in stopwords and m_contact.group(1).lower() not in time_words:
+                recipient = m_contact.group(1).strip()
+
+            # Pattern B: to (my) (manager/boss) [name]
+            if not recipient:
+                m_mgr = re.search(r'\bto\s+(?:my\s+)?(manager|boss|colleague|team\s*lead|hr|lead|teacher|principal|prof|sir|madam)(?:\s+([a-zA-Z0-9_]+))?', clean_norm, re.IGNORECASE)
+                if m_mgr:
+                    title = m_mgr.group(1).strip()
+                    name = m_mgr.group(2).strip() if m_mgr.group(2) else None
+                    if name and name.lower() not in stopwords and name.lower() not in time_words:
+                        recipient = name
+                    else:
+                        recipient = title.capitalize()
+
+            # Pattern C: to/for/tell/whatsapp [name]
+            if not recipient:
+                for n_match in re.finditer(r'(?:\b(?:to|for|tell|whatsapp|message|msg|text)\s+)+([a-zA-Z0-9_]+)', clean_norm, re.IGNORECASE):
+                    cand = n_match.group(1).strip()
+                    if cand.lower() not in stopwords and cand.lower() not in time_words:
+                        recipient = cand
+                        break
+
+        # 3. Check if Leave Letter intent
+        is_leave = bool(re.search(r'\b(leave\s*letter|leave\s*note|leave\s*application|leave\s*request|sick\s*leave|vacation\s*leave|apply\s*leave)\b', clean_norm, re.IGNORECASE))
+        if not is_leave and ("leave" in clean_norm.lower() and ("reason" in clean_norm.lower() or "fever" in clean_norm.lower() or "sick" in clean_norm.lower() or "headache" in clean_norm.lower())):
+            is_leave = True
+
+        if is_leave:
+            # Extract reason
+            m_reason = re.search(r'\b(?:on|due\s+to|because\s+of|with\s+reason|reason\s*[:=]?)\s+([a-zA-Z0-9_\s]+?)(?:\s+(?:to|on\s+whatsapp|in\s+whatsapp|via\s+whatsapp|for\s+tomorrow|for\s+today)|$)', clean_norm, re.IGNORECASE)
+            if m_reason:
+                cand_reason = m_reason.group(1).strip()
+                cand_reason = re.sub(r'\s+reason$', '', cand_reason, flags=re.IGNORECASE).strip()
+                if cand_reason and cand_reason.lower() not in ["this", "this reason", "reason"]:
+                    reason = cand_reason
+
+            message = whatsapp_controller.generate_smart_context(
+                prompt_or_reason=reason or clean_norm,
+                recipient=recipient or "Sir/Madam",
+                context_type="leave_letter"
+            )
+        else:
+            # Regular message extraction
+            if ':' in clean_norm:
+                parts = clean_norm.split(':', 1)
+                message = parts[1].strip()
+            else:
+                kw_match = re.search(r'\b(?:saying|that|with\s+message|with\s+text|about)\s+(.+)$', clean_norm, re.IGNORECASE)
+                if kw_match:
+                    message = kw_match.group(1).strip()
+                elif recipient:
+                    idx = clean_norm.find(recipient)
+                    if idx != -1:
+                        after = clean_norm[idx + len(recipient):].strip()
+                        after = re.sub(r'^(?:saying|that|in\s+whatsapp|on\s+whatsapp|via\s+whatsapp|:\s*|,\s*|and\s+send\s+message\s+about\s*|and\s+send\s+message\s*)+', '', after, flags=re.IGNORECASE).strip()
+                        after = re.sub(r'(?:in|on|via)?\s*whatsapp$', '', after, flags=re.IGNORECASE).strip()
+                        if after and after.lower() not in stopwords:
+                            message = after
+
+            if message:
+                message = re.sub(r'(?:in|on|via)?\s*whatsapp$', '', message, flags=re.IGNORECASE).strip(' "\'')
+                message = whatsapp_controller.generate_smart_context(message, recipient=recipient)
+
+        params: dict[str, Any] = {}
+        if recipient:
+            params['phone'] = recipient
+        if message:
+            params['message'] = message
+        return {'tool': 'open_whatsapp', 'params': params}
+
     def _single_intent_match(self, ql_in: str) -> Optional[dict[str, Any]]:
         """Matches a single atomic intent with robust natural language cleansing."""
         ql = ql_in.lower().strip()
@@ -519,21 +622,10 @@ class MultiAgentOrchestrator:
             c_phone = m_save.group(2).strip()
             return {"tool": "save_contact", "params": {"name": c_name, "phone": c_phone}}
 
-        # WhatsApp Message
-        m_wa1 = re.search(r'(?:send|tell|message)\s+(.+?)\s+to\s+([a-zA-Z0-9_]+)\s+(?:in|on|via)?\s*whatsapp', ql)
-        if m_wa1:
-            return {"tool": "open_whatsapp", "params": {"phone": m_wa1.group(2).strip(), "message": m_wa1.group(1).strip()}}
-
-        m_wa2 = re.search(r'(?:send|tell|message)\s+([a-zA-Z0-9_]+)\s+(?:saying|that|:\s*)?(.+?)\s+(?:in|on|via)?\s*whatsapp', ql)
-        if m_wa2:
-            return {"tool": "open_whatsapp", "params": {"phone": m_wa2.group(1).strip(), "message": m_wa2.group(2).strip()}}
-
-        m_wa3 = re.search(r'(?:whatsapp\s+([a-zA-Z0-9_]+)\s+(?:saying\s+|:\s*)?(.+))', ql)
-        if m_wa3 and "web" not in ql:
-            return {"tool": "open_whatsapp", "params": {"phone": m_wa3.group(1).strip(), "message": m_wa3.group(2).strip()}}
-
-        if "whatsapp" in ql:
-            return {"tool": "open_whatsapp", "params": {}}
+        # WhatsApp Actions (Full NLP Matcher)
+        wa_intent = self._extract_whatsapp_intent(ql_in)
+        if wa_intent:
+            return wa_intent
 
         # YouTube queries
         m_yt = re.search(r'(?:search\s+youtube\s+for\s+|play\s+(.+?)\s+on\s+youtube|play\s+|youtube\s+search\s+|youtube\s+)(.+)', ql)

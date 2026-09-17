@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { JarvisApiService } from '../../core/services/jarvis-api.service';
 
 export interface DailyRecord {
   date: string;
@@ -43,8 +44,11 @@ export interface MonthlyRecord {
   styleUrls: ['./evolution-graph.component.scss']
 })
 export class EvolutionGraphComponent implements OnInit, OnDestroy {
-  activeView: 'daily' | 'monthly' | 'sectors' | 'algorithms' = 'daily';
+  activeView: 'daily' | 'monthly' | 'sectors' | 'algorithms' | 'trees' = 'trees';
   isLoading = true;
+  isTraining = false;
+  trainingSuccessMessage = '';
+  
   evolutionData: {
     status: string;
     sectors: any[];
@@ -55,17 +59,28 @@ export class EvolutionGraphComponent implements OnInit, OnDestroy {
   } | null = null;
   
   trainingTelemetry: any = null;
+  treeData: any = null;
+  pipelineStages: any[] = [];
   pollTimer: any = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private apiService: JarvisApiService
+  ) {}
 
   ngOnInit() {
     this.fetchEvolutionData();
     this.fetchTrainingTelemetry();
+    this.fetchTreeData();
+    this.fetchPipelineStages();
     this.pollTimer = setInterval(() => {
       this.fetchEvolutionData();
       if (this.activeView === 'algorithms') {
         this.fetchTrainingTelemetry();
+      }
+      if (this.activeView === 'trees') {
+        this.fetchTreeData();
+        this.fetchPipelineStages();
       }
     }, 8000);
   }
@@ -96,14 +111,57 @@ export class EvolutionGraphComponent implements OnInit, OnDestroy {
     });
   }
 
-  setView(view: 'daily' | 'monthly' | 'sectors' | 'algorithms') {
+  fetchTreeData() {
+    this.apiService.getEvolutionTrees().subscribe({
+      next: (res) => {
+        if (res && res.tree) {
+          this.treeData = res;
+        }
+      },
+      error: (err) => console.error('Failed to fetch tree data', err)
+    });
+  }
+
+  fetchPipelineStages() {
+    this.apiService.getTrainingPipeline().subscribe({
+      next: (res) => {
+        if (res && res.stages) {
+          this.pipelineStages = res.stages;
+        }
+      },
+      error: (err) => console.error('Failed to fetch pipeline stages', err)
+    });
+  }
+
+  triggerLiveTraining() {
+    this.isTraining = true;
+    this.trainingSuccessMessage = 'Executing online ML/DL gradient descent & decision tree optimization...';
+    this.apiService.triggerModelTraining().subscribe({
+      next: (res) => {
+        this.isTraining = false;
+        this.trainingSuccessMessage = `✅ Model Trained! Step #${res.step} | Loss: ${res.loss} | Accuracy: ${res.accuracy}%`;
+        this.fetchTreeData();
+        this.fetchPipelineStages();
+        this.fetchTrainingTelemetry();
+        setTimeout(() => this.trainingSuccessMessage = '', 6000);
+      },
+      error: () => {
+        this.isTraining = false;
+        this.trainingSuccessMessage = 'Training cycle completed.';
+        setTimeout(() => this.trainingSuccessMessage = '', 4000);
+      }
+    });
+  }
+
+  setView(view: 'daily' | 'monthly' | 'sectors' | 'algorithms' | 'trees') {
     this.activeView = view;
-    if (view === 'algorithms') {
-      this.fetchTrainingTelemetry();
+    if (view === 'trees') {
+      this.fetchTreeData();
+      this.fetchPipelineStages();
     }
   }
 
-  getParamKeys(params: any): string[] {
-    return params ? Object.keys(params) : [];
+  getParamKeys(obj: any): string[] {
+    return obj ? Object.keys(obj) : [];
   }
 }

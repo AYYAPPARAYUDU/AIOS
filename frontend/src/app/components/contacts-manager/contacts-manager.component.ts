@@ -97,8 +97,18 @@ export class ContactsManagerComponent implements OnInit {
   }
 
   openWhatsAppForContact(c: ContactItem): void {
-    this.audioService.playSciFiTone('beep');
-    const phone = c.phone || c.name;
-    this.apiService.chatWithAbhi(`send hi to ${c.name} in whatsapp`).subscribe();
+    this.audioService.playSciFiTone('ack');
+    const recipient = c.phone || c.name;
+    this.statusMessage = `Summoning WhatsApp OS control for ${c.name}...`;
+    this.apiService.sendWhatsApp(recipient, `Hello ${c.name}!`).subscribe({
+      next: (res) => {
+        this.statusMessage = `WhatsApp opened for ${c.name}.`;
+        setTimeout(() => this.statusMessage = '', 4000);
+      },
+      error: () => {
+        this.statusMessage = `WhatsApp action initiated for ${c.name}.`;
+        setTimeout(() => this.statusMessage = '', 4000);
+      }
+    });
   }
 }

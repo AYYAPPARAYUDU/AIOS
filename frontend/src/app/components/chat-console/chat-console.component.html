@@ -53,6 +53,26 @@
               <span *ngIf="tc.parameters?.query" class="param-tag"><i class="fas fa-search text-cyan"></i> {{ tc.parameters.query }}</span>
               <span *ngIf="tc.parameters?.level !== undefined" class="param-tag"><i class="fas fa-sliders-h text-gold"></i> {{ tc.parameters.level }}%</span>
               <span *ngIf="tc.parameters?.macro_name" class="param-tag"><i class="fas fa-magic text-cyan"></i> {{ tc.parameters.macro_name }}</span>
+
+              <!-- Direct 1-Click Action Buttons -->
+              <button *ngIf="tc.tool === 'open_whatsapp'" 
+                 (click)="openActionLink(tc)" 
+                 class="action-link-btn wa-link"
+                 title="Launch WhatsApp chat & focus on OS">
+                <i class="fab fa-whatsapp"></i> OPEN CHAT
+              </button>
+              <button *ngIf="tc.parameters?.message || tc.result?.message" 
+                 (click)="copyMessageText(tc.parameters?.message || tc.result?.message)" 
+                 class="action-link-btn"
+                 title="Copy generated message/letter to clipboard">
+                <i class="fas fa-copy"></i> COPY MSG
+              </button>
+              <button *ngIf="tc.tool !== 'open_whatsapp' && (tc.result?.target || tc.result?.url || tc.result?.client_action?.url)" 
+                 (click)="openActionLink(tc)" 
+                 class="action-link-btn"
+                 title="Open target link">
+                <i class="fas fa-external-link-alt"></i> OPEN
+              </button>
             </div>
           </div>
         </div>
@@ -73,11 +93,14 @@
     <button class="chip clone-chip" (click)="sendQuickPrompt('Clone Mode: Analyze my technical goals and plan my next sprint')">
       <i class="fas fa-fingerprint text-green"></i> 🧬 Clone Thinking
     </button>
-    <button class="chip" (click)="sendQuickPrompt('open youtube and play lofi')">
-      <i class="fab fa-youtube"></i> YouTube Lofi
+    <button class="chip wa-chip" (click)="sendQuickPrompt('send leave letter on fever reason to my manager on whatsapp')">
+      <i class="fas fa-envelope-open-text" style="color:#25d366;"></i> ✉️ Leave Letter (WhatsApp)
     </button>
     <button class="chip" (click)="sendQuickPrompt('open whatsapp')">
-      <i class="fab fa-whatsapp"></i> WhatsApp
+      <i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp
+    </button>
+    <button class="chip" (click)="sendQuickPrompt('open youtube and play lofi')">
+      <i class="fab fa-youtube" style="color:#ff0000;"></i> YouTube Lofi
     </button>
     <button class="chip" (click)="sendQuickPrompt('open github')">
       <i class="fab fa-github"></i> GitHub

@@ -104,3 +104,28 @@ async def export_session(req: SessionActionRequest):
 async def clear_session(conversation_id: str = "main_session"):
     success = db.clear_conversation(conversation_id)
     return {"status": "cleared", "conversation_id": conversation_id, "success": success}
+
+# Continuous ML/DL Self-Training & Dynamic Decision Tree Telemetry
+@router.get("/evolution/trees")
+async def get_evolution_decision_trees():
+    from backend.app.clone.ml_dl_trainer import ml_dl_trainer
+    return {
+        "status": "success",
+        "tree": ml_dl_trainer.get_decision_tree_graph(),
+        "dataset": ml_dl_trainer.get_dataset_stats()
+    }
+
+@router.get("/evolution/pipeline")
+async def get_training_pipeline():
+    from backend.app.clone.ml_dl_trainer import ml_dl_trainer
+    return {
+        "status": "success",
+        "stages": ml_dl_trainer.get_training_pipeline_stages(),
+        "stats": ml_dl_trainer.get_dataset_stats()
+    }
+
+@router.post("/train")
+async def trigger_active_training():
+    from backend.app.clone.ml_dl_trainer import ml_dl_trainer
+    res = ml_dl_trainer.train_step(batch_size=32)
+    return res

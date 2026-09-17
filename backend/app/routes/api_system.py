@@ -39,6 +39,11 @@ class TerminalExecuteRequest(BaseModel):
 class ProcessKillRequest(BaseModel):
     pid: int
 
+class WhatsAppRequest(BaseModel):
+    recipient: Optional[str] = None
+    message: Optional[str] = None
+    auto_send: Optional[bool] = True
+
 # Endpoints
 @router.get("/telemetry")
 async def get_telemetry():
@@ -95,6 +100,17 @@ async def handle_power(req: PowerRequest):
 @router.post("/actions/app")
 async def launch_application(req: AppLaunchRequest):
     return app_manager.launch_app(req.app_name, req.arguments)
+
+@router.post("/actions/whatsapp")
+async def control_whatsapp(req: WhatsAppRequest):
+    from backend.app.os_control.whatsapp import whatsapp_controller
+    if req.recipient or req.message:
+        return whatsapp_controller.send_whatsapp_message(
+            recipient=req.recipient,
+            message=req.message,
+            auto_send=bool(req.auto_send)
+        )
+    return whatsapp_controller.launch_whatsapp()
 
 @router.post("/terminal/execute")
 async def execute_command(req: TerminalExecuteRequest):

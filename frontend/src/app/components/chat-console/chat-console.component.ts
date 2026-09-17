@@ -206,6 +206,36 @@ export class ChatConsoleComponent implements OnInit, AfterViewChecked, OnDestroy
     });
   }
 
+  public openActionLink(tc: any): void {
+    this.audioService.playSciFiTone('ack');
+    const url = tc.result?.app_target || tc.result?.target || tc.result?.url || tc.result?.client_action?.url;
+    if (url) {
+      if (url.startsWith('whatsapp:') || url.startsWith('whatsapp://')) {
+        window.location.href = url;
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+    // Also trigger backend OS controller for native focus
+    if (tc.tool === 'open_whatsapp') {
+      const recipient = tc.parameters?.phone || tc.result?.recipient;
+      const message = tc.parameters?.message || tc.result?.message;
+      this.apiService.sendWhatsApp(recipient, message).subscribe();
+    }
+  }
+
+  public copyMessageText(text: string): void {
+    if (!text) return;
+    this.audioService.playSciFiTone('beep');
+    navigator.clipboard.writeText(text).then(() => {
+      this.sessionStatusMessage = '📋 Message copied to clipboard!';
+      setTimeout(() => this.sessionStatusMessage = '', 3000);
+    }).catch(() => {
+      this.sessionStatusMessage = 'Could not copy to clipboard.';
+      setTimeout(() => this.sessionStatusMessage = '', 3000);
+    });
+  }
+
   public addSystemMessage(sender: string, content: string, imagePreview: string | null = null): void {
     this.messages.push({
       sender,

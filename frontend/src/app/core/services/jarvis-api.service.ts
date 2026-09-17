@@ -48,6 +48,10 @@ export class JarvisApiService {
     return this.http.post<any>(`${this.baseUrl}/api/system/actions/app`, { app_name: appName, arguments: args });
   }
 
+  sendWhatsApp(recipient: string | null = null, message: string | null = null, autoSend = true): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/system/actions/whatsapp`, { recipient, message, auto_send: autoSend });
+  }
+
   powerAction(mode: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/api/system/actions/power`, { mode });
   }
@@ -142,5 +146,18 @@ export class JarvisApiService {
 
   clearSession(conversationId = 'main_session'): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/api/agents/session/clear?conversation_id=${encodeURIComponent(conversationId)}`);
+  }
+
+  // Dynamic ML Decision Trees & Training Pipeline Telemetry
+  getEvolutionTrees(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/api/agents/evolution/trees`);
+  }
+
+  getTrainingPipeline(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/api/agents/evolution/pipeline`);
+  }
+
+  triggerModelTraining(): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/agents/train`, {});
   }
 }
