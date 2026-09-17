@@ -23,10 +23,10 @@ class VideoGenRequest(BaseModel):
 
 @router.post("/generate-image")
 async def generate_image(req: ImageGenRequest):
-    """Generates a high-definition image based on prompt."""
+    """Generates a genuine high-definition AI image based on prompt."""
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
-    return media_generator.generate_image(
+    return await media_generator.generate_image(
         prompt=req.prompt,
         style=req.style or "Cyberpunk 4K Hologram",
         aspect_ratio=req.aspect_ratio or "16:9"
@@ -37,7 +37,7 @@ async def generate_video(req: VideoGenRequest):
     """Generates an animated multi-frame procedural/AI video asset."""
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
-    return media_generator.generate_video(
+    return await media_generator.generate_video(
         prompt=req.prompt,
         duration_sec=req.duration_sec or 5,
         fps=req.fps or 30
@@ -52,8 +52,20 @@ async def get_gallery():
 async def serve_image(filename: str):
     file_path = os.path.join(IMAGES_DIR, filename)
     if not os.path.exists(file_path):
+        # Check SVG fallback
+        svg_path = file_path.replace(".png", ".svg")
+        if os.path.exists(svg_path):
+            return FileResponse(svg_path, media_type="image/svg+xml")
         raise HTTPException(status_code=404, detail="Image not found.")
-    media_type = "image/svg+xml" if filename.endswith(".svg") else "image/png"
+    
+    media_type = "image/png"
+    if filename.endswith(".svg"):
+        media_type = "image/svg+xml"
+    elif filename.endswith((".jpg", ".jpeg")):
+        media_type = "image/jpeg"
+    elif filename.endswith(".webp"):
+        media_type = "image/webp"
+        
     return FileResponse(file_path, media_type=media_type)
 
 @router.get("/videos/{filename}")

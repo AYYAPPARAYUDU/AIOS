@@ -7,11 +7,13 @@ try:
     from backend.app.clone.evolution_analytics import evolution_analytics
     from backend.app.clone.perception_engine import perception_engine
     from backend.app.clone.continuous_learner import continuous_learner
+    from backend.app.clone.training_engine import real_training_engine
 except ImportError:
     from app.clone.clone_service import clone_service
     from app.clone.evolution_analytics import evolution_analytics
     from app.clone.perception_engine import perception_engine
     from app.clone.continuous_learner import continuous_learner
+    from app.clone.training_engine import real_training_engine
 
 router = APIRouter(prefix="/api/clone", tags=["Self-Learning AI Clone"])
 
@@ -39,6 +41,12 @@ async def chat_with_clone(req: CloneChatRequest):
         user_query=req.message,
         conversation_id=req.conversation_id or "clone_session"
     )
+    # Execute a real mathematical training step on each dialogue
+    real_training_engine.execute_training_step(
+        user_text=req.message,
+        clone_response=result.get("response", ""),
+        sector="empathy"
+    )
     return result
 
 @router.post("/reflect")
@@ -51,6 +59,11 @@ async def trigger_daily_reflection():
 async def get_evolution_analytics():
     """Returns dynamic daily/monthly training curves, sector radar distribution, and loss convergence."""
     return evolution_analytics.get_evolution_metrics()
+
+@router.get("/training-telemetry")
+async def get_training_telemetry():
+    """Returns real-time mathematical training telemetry, loss convergence, and active algorithms."""
+    return real_training_engine.get_telemetry()
 
 @router.post("/perceive")
 async def process_perception(req: PerceptionTelemetryRequest):

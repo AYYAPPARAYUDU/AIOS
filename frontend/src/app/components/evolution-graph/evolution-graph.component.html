@@ -3,15 +3,16 @@
     <div class="title-cluster">
       <div class="pulse-orb"></div>
       <div>
-        <h3>📈 NEURAL CLONE EVOLUTION MATRIX</h3>
-        <p class="subtitle">Continuous Autonomous Micro-Learning & Day-by-Day Mastery Analytics</p>
+        <h3>📈 NEURAL CLONE EVOLUTION MATRIX & ALGORITHMS</h3>
+        <p class="subtitle">Live Machine Learning Training Telemetry & Real Mathematical Loss Convergence</p>
       </div>
     </div>
 
     <div class="view-toggles">
       <button [class.active]="activeView === 'daily'" (click)="setView('daily')">📅 DAY-BY-DAY</button>
       <button [class.active]="activeView === 'monthly'" (click)="setView('monthly')">🌌 MONTHLY GROWTH</button>
-      <button [class.active]="activeView === 'sectors'" (click)="setView('sectors')">🎯 SECTOR RADAR</button>
+      <button [class.active]="activeView === 'sectors'" (click)="setView('sectors')">🎯 SECTORS</button>
+      <button [class.active]="activeView === 'algorithms'" (click)="setView('algorithms')">🔬 ALGORITHMS & TRAINING</button>
     </div>
   </div>
 
@@ -30,7 +31,7 @@
     <div class="kpi-card">
       <span class="label">LOSS CONVERGENCE</span>
       <div class="val text-green">{{ snap.loss_convergence }}</div>
-      <div class="sub">Self-Correction Equilibrium</div>
+      <div class="sub">InfoNCE Optimization</div>
     </div>
     <div class="kpi-card">
       <span class="label">ACTIVE SYNAPSES</span>
@@ -43,8 +44,8 @@
   <div class="graph-section" *ngIf="activeView === 'daily'">
     <div class="chart-box">
       <div class="chart-title">
-        <span>⚡ 30-Day Autonomous Learning Velocity & Mastery Curve</span>
-        <span class="badge-live">LIVE EVOLVING</span>
+        <span>⚡ Real 30-Day Activity & Mastery Velocity</span>
+        <span class="badge-live">LIVE DATABASE</span>
       </div>
       
       <div class="svg-wrapper">
@@ -99,7 +100,7 @@
       <div class="month-card" *ngFor="let m of evolutionData?.monthly_timeline">
         <div class="month-name">{{ m.month }}</div>
         <div class="metric-row">
-          <span>IQ Equivalent</span>
+          <span>IQ Benchmark</span>
           <strong class="text-cyan">{{ m.overall_iq_equivalent }}</strong>
         </div>
         <div class="metric-row">
@@ -111,7 +112,7 @@
           <strong class="text-green">{{ m.empathy_index }}%</strong>
         </div>
         <div class="metric-row">
-          <span>Actions Done</span>
+          <span>Interactions</span>
           <span class="text-yellow">{{ m.actions_executed | number }}</span>
         </div>
       </div>
@@ -134,6 +135,68 @@
             <span>Score: <strong [style.color]="s.color">{{ s.current_score }}%</strong></span>
             <span>Target: 100%</span>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALGORITHMS & REAL TRAINING TELEMETRY VIEW -->
+  <div class="graph-section" *ngIf="activeView === 'algorithms'">
+    <!-- Top Telemetry Status -->
+    <div class="training-meta-bar" *ngIf="trainingTelemetry">
+      <div class="meta-item">
+        <span>MODEL:</span>
+        <strong class="text-cyan">{{ trainingTelemetry.model_name }}</strong>
+      </div>
+      <div class="meta-item">
+        <span>TOTAL TRAINING STEPS:</span>
+        <strong class="text-yellow">{{ trainingTelemetry.total_training_steps }}</strong>
+      </div>
+      <div class="meta-item">
+        <span>CURRENT LOSS:</span>
+        <strong class="text-green">{{ trainingTelemetry.current_loss }}</strong>
+      </div>
+      <div class="meta-item">
+        <span>OPTIMIZER:</span>
+        <span class="text-pink">{{ trainingTelemetry.optimizer }}</span>
+      </div>
+    </div>
+
+    <!-- Active Algorithms Matrix -->
+    <div class="algo-cards-grid" *ngIf="trainingTelemetry?.algorithms">
+      <div class="algo-card" *ngFor="let algo of trainingTelemetry.algorithms">
+        <div class="algo-header">
+          <span class="algo-type">{{ algo.type }}</span>
+          <h5>{{ algo.name }}</h5>
+        </div>
+        <div class="formula-box">
+          <code>{{ algo.formula }}</code>
+        </div>
+        <p class="algo-desc">{{ algo.description }}</p>
+        <div class="algo-params">
+          <div class="param-tag" *ngFor="let key of getParamKeys(algo.parameters)">
+            <span>{{ key }}:</span>
+            <strong>{{ algo.parameters[key] }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Gradient Step Log Terminal -->
+    <div class="training-terminal" *ngIf="trainingTelemetry?.recent_training_steps">
+      <div class="term-header">
+        <span class="term-dot"></span>
+        <span>LIVE GRADIENT & BACKPROPAGATION STREAM (MODEL: ABHI)</span>
+      </div>
+      <div class="term-body">
+        <div class="log-line" *ngFor="let st of trainingTelemetry.recent_training_steps">
+          <span class="time">[{{ st.timestamp | date:'HH:mm:ss' }}]</span>
+          <span class="step text-yellow">STEP #{{ st.step }}</span>
+          <span class="loss text-green">LOSS: {{ st.loss }}</span>
+          <span class="grad">GRAD_NORM: {{ st.grad_norm }}</span>
+          <span class="lr text-cyan">LR: {{ st.lr }}</span>
+          <span class="layer text-pink">{{ st.target_layer }}</span>
+          <span class="status">[{{ st.status }}]</span>
         </div>
       </div>
     </div>

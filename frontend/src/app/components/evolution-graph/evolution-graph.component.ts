@@ -43,7 +43,7 @@ export interface MonthlyRecord {
   styleUrls: ['./evolution-graph.component.scss']
 })
 export class EvolutionGraphComponent implements OnInit, OnDestroy {
-  activeView: 'daily' | 'monthly' | 'sectors' = 'daily';
+  activeView: 'daily' | 'monthly' | 'sectors' | 'algorithms' = 'daily';
   isLoading = true;
   evolutionData: {
     status: string;
@@ -54,14 +54,20 @@ export class EvolutionGraphComponent implements OnInit, OnDestroy {
     current_snapshot: any;
   } | null = null;
   
-  selectedSector: string = 'coding';
+  trainingTelemetry: any = null;
   pollTimer: any = null;
 
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.fetchEvolutionData();
-    this.pollTimer = setInterval(() => this.fetchEvolutionData(), 10000);
+    this.fetchTrainingTelemetry();
+    this.pollTimer = setInterval(() => {
+      this.fetchEvolutionData();
+      if (this.activeView === 'algorithms') {
+        this.fetchTrainingTelemetry();
+      }
+    }, 8000);
   }
 
   ngOnDestroy() {
@@ -81,17 +87,23 @@ export class EvolutionGraphComponent implements OnInit, OnDestroy {
     });
   }
 
-  setView(view: 'daily' | 'monthly' | 'sectors') {
+  fetchTrainingTelemetry() {
+    this.http.get<any>(`${environment.apiUrl}/clone/training-telemetry`).subscribe({
+      next: (data) => {
+        this.trainingTelemetry = data;
+      },
+      error: (err) => console.error('Failed to fetch training telemetry', err)
+    });
+  }
+
+  setView(view: 'daily' | 'monthly' | 'sectors' | 'algorithms') {
     this.activeView = view;
+    if (view === 'algorithms') {
+      this.fetchTrainingTelemetry();
+    }
   }
 
-  selectSector(id: string) {
-    this.selectedSector = id;
-  }
-
-  getSectorScore(sectorId: string): number {
-    if (!this.evolutionData?.radar_distribution) return 85;
-    const s = this.evolutionData.radar_distribution.find((item: any) => item.id === sectorId);
-    return s ? s.current_score : 85;
+  getParamKeys(params: any): string[] {
+    return params ? Object.keys(params) : [];
   }
 }
