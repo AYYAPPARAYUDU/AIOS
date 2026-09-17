@@ -234,7 +234,7 @@ class SystemActions:
         """Opens WhatsApp app or web, optionally with phone and pre-filled message."""
         if phone or message:
             encoded_msg = urllib.parse.quote_plus(message or "")
-            clean_phone = re.sub(r"[^\d+]", "", phone or "")
+            clean_phone = re.sub(r"[^\d+]", "", str(phone or ""))
             if clean_phone:
                 url = f"https://web.whatsapp.com/send?phone={clean_phone}&text={encoded_msg}"
             else:
@@ -242,14 +242,9 @@ class SystemActions:
             _open_url_robust(url)
             return {"action": "open_whatsapp", "target": url, "status": "opened"}
         else:
-            if os.name == 'nt':
-                try:
-                    os.startfile("whatsapp:")
-                    return {"action": "open_whatsapp", "target": "whatsapp:", "status": "opened"}
-                except Exception:
-                    pass
-            _open_url_robust("https://web.whatsapp.com")
-            return {"action": "open_whatsapp", "target": "https://web.whatsapp.com", "status": "opened"}
+            url = "https://web.whatsapp.com"
+            _open_url_robust(url)
+            return {"action": "open_whatsapp", "target": url, "status": "opened"}
 
     @staticmethod
     def fetch_url_content(url: str) -> dict[str, Any]:
@@ -270,9 +265,7 @@ class SystemActions:
 
                 # Remove scripts, styles, SVGs
                 clean = re.sub(r"<(script|style|svg|noscript).*?>.*?</\1>", "", raw_html, flags=re.DOTALL | re.IGNORECASE)
-                # Strip tags
                 clean = re.sub(r"<[^>]+>", " ", clean)
-                # Normalize whitespace
                 clean = re.sub(r"\s+", " ", clean).strip()
 
                 summary = clean[:3000]

@@ -22,7 +22,7 @@ export class ChatConsoleComponent implements AfterViewChecked {
     {
       sender: 'ABHI',
       role: 'assistant',
-      content: 'I am ABHI, your Supreme Cognitive Orchestrator. The Puranic deity swarm (Indra, Saraswati, Narada, Hanuman, Lakshmi, Durga, Vishwakarma) stands ready to execute your command with divine precision.'
+      content: 'JARVIS AIOS Neural Core and AI Clone Swarm initialized. All native OS controllers, 200GB dynamic knowledge vault, and ML clone learning loops are active.'
     }
   ];
   public inputText: string = '';
@@ -58,8 +58,8 @@ export class ChatConsoleComponent implements AfterViewChecked {
     this.apiService.exportSession('main_session').subscribe({
       next: (res) => {
         if (res.status === 'success') {
-          this.sessionStatusMessage = `Session archived to 50GB Vault: ${res.file}`;
-          this.audioService.speak('Current session transcript has been safely archived in the Saraswati Knowledge Vault.');
+          this.sessionStatusMessage = `Session archived to Knowledge Vault: ${res.file}`;
+          this.audioService.speak('Current session transcript has been safely archived in the Knowledge Vault.');
         } else {
           this.sessionStatusMessage = 'No messages to archive yet.';
         }
@@ -81,7 +81,7 @@ export class ChatConsoleComponent implements AfterViewChecked {
             {
               sender: 'ABHI',
               role: 'assistant',
-              content: 'Memory cleared for new session. All divine deities stand ready for your command.'
+              content: 'Memory buffer cleared for new session. All divine deities and AI Clone stand ready.'
             }
           ];
           this.sessionStatusMessage = 'Session memory cleared successfully.';
@@ -105,14 +105,25 @@ export class ChatConsoleComponent implements AfterViewChecked {
     this.inputText = '';
     this.audioService.avatarState$.next('thinking');
 
-
     this.apiService.chatWithAbhi(text, this.selectedAgent).subscribe({
       next: (res) => {
         this.audioService.avatarState$.next('idle');
-        const answer = res.response || 'Divine task completed with absolute precision.';
+        const answer = res.response || 'Task executed with absolute precision.';
         const allTools = res.tool_calls || (res.tool_call ? [res.tool_call] : []);
+        
+        // Execute client-side action bridges if web URLs or app links were returned
+        if (res.client_actions && Array.isArray(res.client_actions)) {
+          for (const action of res.client_actions) {
+            if (action.type === 'open_url' && action.url) {
+              try {
+                window.open(action.url, '_blank');
+              } catch (e) {}
+            }
+          }
+        }
+
         this.messages.push({
-          sender: 'ABHI',
+          sender: this.selectedAgent === 'clone' ? 'MY CLONE' : 'ABHI',
           role: 'assistant',
           content: answer,
           toolCall: res.tool_call,
@@ -122,13 +133,12 @@ export class ChatConsoleComponent implements AfterViewChecked {
         this.agentResponse.emit(res);
       },
       error: (err) => {
-
         this.audioService.avatarState$.next('idle');
         this.audioService.playSciFiTone('error');
         this.messages.push({
           sender: 'ABHI',
           role: 'assistant',
-          content: `Celestial anomaly encountered: ${err.message}`
+          content: `Controller anomaly: ${err.message || 'Check server connection'}`
         });
       }
     });

@@ -97,6 +97,13 @@
   border: 1px solid rgba(255, 215, 0, 0.3);
   padding: 2px 6px;
   border-radius: 4px;
+
+  &.clone-badge {
+    color: #76ff03;
+    background: rgba(118, 255, 3, 0.15);
+    border-color: rgba(118, 255, 3, 0.5);
+    box-shadow: 0 0 8px rgba(118, 255, 3, 0.3);
+  }
 }
 
 .status-alert {
@@ -152,9 +159,20 @@
       color: #fff;
       box-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
     }
+
+    &.clone-chip {
+      border-color: rgba(118, 255, 3, 0.4);
+      background: rgba(118, 255, 3, 0.1);
+      color: #76ff03;
+
+      &:hover {
+        background: rgba(118, 255, 3, 0.25);
+        border-color: #76ff03;
+        box-shadow: 0 0 10px rgba(118, 255, 3, 0.5);
+      }
+    }
   }
 }
-
 
 .chat-messages {
   flex: 1;
@@ -198,6 +216,22 @@
       color: var(--neon-gold);
       font-family: var(--font-celestial);
       font-weight: 700;
+    }
+  }
+
+  &.clone {
+    align-self: flex-start;
+    background: rgba(118, 255, 3, 0.08);
+    border: 1px solid rgba(118, 255, 3, 0.5);
+    color: #f1f5f9;
+    border-bottom-left-radius: 1px;
+    box-shadow: 0 0 14px rgba(118, 255, 3, 0.15);
+
+    .bubble-sender {
+      color: #76ff03;
+      font-family: var(--font-hud);
+      font-weight: 700;
+      letter-spacing: 1px;
     }
   }
 }
@@ -287,7 +321,6 @@
   .text-gold { color: #ffd700; }
   .text-cyan { color: #00f0ff; }
 }
-
 
 .chat-input-bar {
   padding: 8px 10px;

@@ -1,6 +1,7 @@
 import json
 import re
 import time
+import asyncio
 import logging
 from typing import Any, Optional
 from backend.app.core.llm import ollama_client
@@ -13,15 +14,18 @@ from backend.app.os_control.automation import automation_controller
 from backend.app.os_control.optimizer import system_optimizer
 from backend.app.storage.manager import storage_mgr
 from backend.app.storage.db import db
+from backend.app.clone.learner import clone_learner
+from backend.app.clone.clone_service import clone_service
 
 logger = logging.getLogger(__name__)
 
 SUPERVISOR_SYSTEM_PROMPT = """You are ABHI, the Supreme Autonomous Neural Operating System and Cognitive Swarm Orchestrator.
-You have 100% unrestricted authority to assist the user, control hardware, manage 50GB storage, search knowledge, and execute system commands.
+You have 100% unrestricted authority to assist the user, control hardware, manage 200GB dynamic storage, search knowledge, and execute system commands.
 
-Divine Cognitive Swarm:
+Divine Cognitive Swarm & Agents:
+- CLONE: The User's Autonomous Digital Clone (Self-learning twin with personalized cognition, habits, and coding style).
 - INDRA: Hardware & Application Master (Volume, Brightness, Laptop Power, App Launching, WhatsApp, YouTube).
-- SARASWATI: Devi of Wisdom & 50GB Knowledge Vault (Semantic Search, Memory Indexing, Document Intelligence).
+- SARASWATI: Devi of Wisdom & Knowledge Vault (Semantic Search, Memory Indexing, Document Intelligence).
 - NARADA: Cosmic Messenger (Real-time Web Search, URL Content Fetching & Global Intel).
 - HANUMAN: Lord of Speed & Power (GUI Automation, RAM Purge, Screen Capture, System Macros).
 - LAKSHMI: Telemetry & Resource Optimization (Battery, CPU/RAM telemetry).
@@ -72,6 +76,17 @@ class MultiAgentOrchestrator:
                 "mantra": "Om Sarva Vijnanaaya Namaha",
                 "capabilities": ["Unrestricted Authority", "Strategic Planning", "Biometric Telemetry", "Swarm Orchestration"]
             },
+            "clone": {
+                "id": "clone",
+                "name": "MY CLONE (Self-Evolving Twin)",
+                "deity": "Autonomous Digital Twin",
+                "status": "idle",
+                "role": "Continuous ML/DL Self-Learning & Personal Cognitive Clone",
+                "avatar_color": "#76ff03",
+                "avatar_icon": "fingerprint",
+                "mantra": "Aham Brahmasmi // Continuous Self-Evolution",
+                "capabilities": ["Dynamic User Mirroring", "Vector Memory Mining", "Continuous Self-Learning", "Autonomous Reasoning"]
+            },
             "indra": {
                 "id": "indra",
                 "name": "INDRA (Devraj OS Commander)",
@@ -88,11 +103,11 @@ class MultiAgentOrchestrator:
                 "name": "SARASWATI (Devi of Wisdom)",
                 "deity": "Goddess of Supreme Knowledge & Arts",
                 "status": "idle",
-                "role": "50GB Local Storage DB & Knowledge Vault",
+                "role": "200GB Dynamic Knowledge Vault & Memory",
                 "avatar_color": "#e0f7fa",
                 "avatar_icon": "book-open",
                 "mantra": "Om Aim Sarasvatyai Namaha",
-                "capabilities": ["50GB Pool Indexing", "Semantic Search", "Code & Doc Analysis", "Vector Memory"]
+                "capabilities": ["200GB Vault Indexing", "Semantic Search", "Code & Doc Analysis", "Vector Memory"]
             },
             "narada": {
                 "id": "narada",
@@ -190,7 +205,7 @@ class MultiAgentOrchestrator:
         return mapping.get(tool_name, "abhi")
 
     async def execute_tool(self, tool_name: str, params: dict[str, Any]) -> dict[str, Any]:
-        """Executes tool action immediately via direct native OS libraries."""
+        """Executes tool action immediately with client action bridge for 100% reliability."""
         exec_agent = self._get_agent_for_tool(tool_name)
         self.set_agent_status(exec_agent, "executing")
         
@@ -199,19 +214,24 @@ class MultiAgentOrchestrator:
                 app_name = params.get("app_name", "")
                 args = params.get("arguments")
                 res = app_manager.launch_app(app_name, args)
+                if res.get("target"):
+                    res["client_action"] = {"type": "open_url", "url": res["target"]}
+                elif app_name.lower() in ["youtube", "github", "google", "whatsapp", "chatgpt"]:
+                    res["client_action"] = {"type": "open_url", "url": f"https://www.{app_name.lower()}.com"}
                 return res
 
             elif tool_name == "open_whatsapp":
                 phone = params.get("phone")
                 msg = params.get("message")
                 
-                # If phone is a contact name, look up in DB
-                if phone and not re.search(r'\d{5,}', phone):
-                    contact = db.get_contact_by_name(phone)
+                if phone and not re.search(r'\d{5,}', str(phone)):
+                    contact = db.get_contact_by_name(str(phone))
                     if contact and contact.get("phone"):
                         phone = contact["phone"]
                         
                 res = actions.open_whatsapp(phone, msg)
+                if res.get("target"):
+                    res["client_action"] = {"type": "open_url", "url": res["target"]}
                 return res
 
             elif tool_name == "save_contact":
@@ -230,11 +250,15 @@ class MultiAgentOrchestrator:
 
             elif tool_name == "search_web":
                 query = params.get("query", "")
-                return actions.search_web_browser(query)
+                res = actions.search_web_browser(query)
+                res["client_action"] = {"type": "open_url", "url": res.get("url")}
+                return res
 
             elif tool_name == "open_url":
                 url = params.get("url", "")
-                return actions.open_url(url)
+                res = actions.open_url(url)
+                res["client_action"] = {"type": "open_url", "url": url}
+                return res
 
             elif tool_name == "set_volume":
                 if "delta" in params:
@@ -298,21 +322,44 @@ class MultiAgentOrchestrator:
     async def process_user_query(
         self,
         query: str,
-        conversation_id: str = "default_session",
-        selected_agent: str = "abhi",
-        biometric_feed: Optional[dict[str, Any]] = None
+        conversation_id: str = "main_session",
+        target_agent: str = "abhi",
+        selected_agent: Optional[str] = None,
+        biometric_feed: Optional[dict[str, Any]] = None,
+        **kwargs
     ) -> dict[str, Any]:
-        """Dual-Engine Orchestrator: Instant Neural Reflex (<5ms) + Deep Cognitive LLM."""
+        """Dual-Engine Orchestrator: Instant Reflex (<5ms) + Deep Cognitive / Digital Clone LLM."""
+        active_target = selected_agent or target_agent or "abhi"
         user_emotion = emotion_engine.analyze_input(query)
         self.set_agent_status("abhi", "active")
 
-        # 1. INSTANT NEURAL REFLEX ENGINE (Instant zero-latency execution)
+        # 1. SPECIAL CASE: USER DIRECTLY INVOKED DIGITAL CLONE AGENT
+        if active_target == "clone":
+            self.set_agent_status("clone", "thinking")
+            clone_res = await clone_service.generate_clone_response(query, conversation_id)
+            self.set_agent_status("clone", "idle")
+            
+            db.add_message(conversation_id=conversation_id, role="user", content=query, sender_name="User")
+            db.add_message(conversation_id=conversation_id, role="assistant", content=clone_res["response"], sender_name="CLONE")
+            
+            return {
+                "response": clone_res["response"],
+                "tool_call": None,
+                "tool_calls": [],
+                "user_emotion": user_emotion,
+                "agents": self.get_agents_status(),
+                "agent_logs": self.agent_logs[-15:],
+                "timestamp": time.time(),
+                "clone_meta": clone_res
+            }
+
+        # 2. INSTANT NEURAL REFLEX ENGINE (Instant zero-latency execution)
         detected_intents = self._detect_all_intents(query)
         executed_tool_calls: list[dict[str, Any]] = []
         action_summaries: list[str] = []
+        client_actions: list[dict[str, Any]] = []
 
         if detected_intents:
-            # Execute all matching reflex actions instantly
             for intent in detected_intents:
                 tool_name = intent["tool"]
                 tool_params = intent["params"]
@@ -325,8 +372,9 @@ class MultiAgentOrchestrator:
                     "result": res,
                     "executed_by": exec_agent
                 })
+                if res.get("client_action"):
+                    client_actions.append(res["client_action"])
 
-                # Format human-friendly response
                 if tool_name == "open_whatsapp":
                     target = tool_params.get("phone") or "WhatsApp"
                     action_summaries.append(f"Indra opened WhatsApp for {target}.")
@@ -343,7 +391,7 @@ class MultiAgentOrchestrator:
                 elif tool_name == "set_brightness":
                     action_summaries.append(f"Indra adjusted screen brightness to {res.get('brightness', 70)}%.")
                 elif tool_name == "purge_ram":
-                    action_summaries.append(f"Hanuman purged RAM and reclaimed memory.")
+                    action_summaries.append("Hanuman purged RAM and reclaimed memory.")
                 elif tool_name == "execute_macro":
                     action_summaries.append(f"Hanuman engaged {tool_params.get('macro_name', '').upper()} macro.")
                 elif tool_name == "lock_screen":
@@ -366,14 +414,14 @@ class MultiAgentOrchestrator:
             answer_text = "**Action Executed Instantly**:\n\n" + "\n".join([f"- {s}" for s in action_summaries])
 
         else:
-            # 2. DEEP COGNITIVE MULTI-AGENT ENGINE (GPU LLM Fast Path)
+            # 3. DEEP COGNITIVE MULTI-AGENT ENGINE (GPU LLM Fast Path)
             past_msgs = db.get_messages(conversation_id, limit=8)
             formatted_history = [{"role": m["role"], "content": m["content"]} for m in past_msgs]
 
             all_contacts = db.list_contacts()
             contacts_summary = ", ".join([f"{c['name']} ({c.get('phone') or 'N/A'})" for c in all_contacts]) if all_contacts else "No contacts saved"
 
-            agent_details = self.active_agents.get(selected_agent, self.active_agents["abhi"])
+            agent_details = self.active_agents.get(active_target, self.active_agents["abhi"])
             system_msg = (
                 f"{SUPERVISOR_SYSTEM_PROMPT}\n\n"
                 f"[SAVED CONTACTS DIRECTORY]: {contacts_summary}\n"
@@ -385,11 +433,10 @@ class MultiAgentOrchestrator:
             messages.extend(formatted_history)
             messages.append({"role": "user", "content": query})
 
-            self.set_agent_status(selected_agent, "thinking")
+            self.set_agent_status(active_target, "thinking")
             llm_res = await ollama_client.chat(messages, temperature=0.2)
             raw_content = llm_res.get("content", "")
 
-            # Check if LLM requested a tool execution
             tool_match = re.search(r'```(?:json)?\s*(\{\s*"tool":.*?\})\s*```', raw_content, re.DOTALL)
             if tool_match:
                 try:
@@ -405,6 +452,8 @@ class MultiAgentOrchestrator:
                         "result": tool_res,
                         "executed_by": exec_agent
                     })
+                    if tool_res.get("client_action"):
+                        client_actions.append(tool_res["client_action"])
 
                     clean_summary = raw_content.replace(tool_match.group(0), "").strip()
                     if not clean_summary:
@@ -421,6 +470,9 @@ class MultiAgentOrchestrator:
                 self.active_agents[aid]["status"] = "idle"
         self.active_agents["abhi"]["status"] = "active"
 
+        # Continuous Self-Learning background loop
+        asyncio.create_task(clone_learner.ingest_user_interaction(query, answer_text, executed_tool_calls))
+
         # Save to DB
         db.add_message(conversation_id=conversation_id, role="user", content=query, sender_name="User")
         db.add_message(conversation_id=conversation_id, role="assistant", content=answer_text, sender_name="ABHI", tool_calls=executed_tool_calls or None)
@@ -429,6 +481,7 @@ class MultiAgentOrchestrator:
             "response": answer_text,
             "tool_call": executed_tool_calls[0] if executed_tool_calls else None,
             "tool_calls": executed_tool_calls,
+            "client_actions": client_actions,
             "user_emotion": user_emotion,
             "agents": self.get_agents_status(),
             "agent_logs": self.agent_logs[-15:],
@@ -457,7 +510,6 @@ class MultiAgentOrchestrator:
     def _single_intent_match(self, ql_in: str) -> Optional[dict[str, Any]]:
         """Matches a single atomic intent with robust natural language cleansing."""
         ql = ql_in.lower().strip()
-        # Strip conversational fillers
         ql = re.sub(r'^(please|can you|could you|would you|jarvis|abhi|hey|help me|i want you to|just|go ahead and)\s+', '', ql).strip()
 
         # Save Contact
@@ -549,7 +601,7 @@ class MultiAgentOrchestrator:
         if any(w in ql for w in ["system status", "hardware stats", "cpu usage", "system telemetry", "ram status", "stats", "diagnostics"]):
             return {"tool": "get_system_stats", "params": {}}
 
-        # App Launching (e.g. "open chrome", "launch vscode", "open calc")
+        # App Launching
         app_keywords = {
             "whatsapp": ["whatsapp", "what's app", "whats app"],
             "youtube": ["youtube", "you tube"],

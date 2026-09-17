@@ -1,19 +1,22 @@
 <div class="chat-container">
   <div class="panel-header">
     <div class="panel-title">
-      <i class="fas fa-om gold-icon"></i>
-      <span>ABHI COGNITIVE SUTRADHAR</span>
-      <span class="unrestricted-pill"><i class="fas fa-unlock-alt"></i> UNRESTRICTED ACCESS</span>
+      <i class="fas fa-sun gold-icon"></i>
+      <span>JARVIS NEURAL CORE</span>
+      <span class="unrestricted-pill"><i class="fas fa-unlock-alt"></i> 100% UNRESTRICTED</span>
     </div>
     
     <div class="session-actions">
-      <button class="session-btn save" (click)="saveSessionToVault()" title="Archive transcript to 50GB local vault">
-        <i class="fas fa-save"></i> SAVE SESSION
+      <button class="session-btn save" (click)="saveSessionToVault()" title="Archive transcript to Knowledge Vault">
+        <i class="fas fa-save"></i> ARCHIVE
       </button>
       <button class="session-btn clear" (click)="clearSessionMemory()" title="Purge session memory">
         <i class="fas fa-trash-alt"></i> CLEAR
       </button>
-      <span class="active-agent-badge">DEITY: [{{ selectedAgent | uppercase }}]</span>
+      <span class="active-agent-badge" [class.clone-badge]="selectedAgent === 'clone'">
+        <i *ngIf="selectedAgent === 'clone'" class="fas fa-fingerprint" style="margin-right:4px;"></i>
+        AGENT: [{{ selectedAgent | uppercase }}]
+      </span>
     </div>
   </div>
 
@@ -22,9 +25,9 @@
   </div>
 
   <div class="chat-messages" #chatScroll>
-    <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="msg.role === 'user' ? 'user' : 'abhi'">
+    <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="msg.role === 'user' ? 'user' : (msg.sender === 'MY CLONE' ? 'clone' : 'abhi')">
       <div class="bubble-sender">
-        <i class="fas" [ngClass]="msg.role === 'user' ? 'fa-user' : 'fa-sun'" style="margin-right:4px;"></i>
+        <i class="fas" [ngClass]="msg.role === 'user' ? 'fa-user' : (msg.sender === 'MY CLONE' ? 'fa-fingerprint text-green' : 'fa-sun')" style="margin-right:4px;"></i>
         <span>{{ msg.sender | uppercase }}</span>
       </div>
       <div class="bubble-body">{{ msg.content }}</div>
@@ -36,7 +39,7 @@
       <!-- Deity Swarm Multi-Agent Execution Trail -->
       <div *ngIf="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls-trail">
         <div class="trail-header">
-          <i class="fas fa-sitemap"></i> DEITY SWARM EXECUTION TRAIL ({{ msg.toolCalls.length }})
+          <i class="fas fa-sitemap"></i> MULTI-AGENT EXECUTION TRAIL ({{ msg.toolCalls.length }})
         </div>
         <div class="trail-list">
           <div *ngFor="let tc of msg.toolCalls" class="tool-chip">
@@ -54,23 +57,25 @@
     </div>
   </div>
 
-
-  <!-- Quick Command Chips -->
+  <!-- Quick Command Action Chips -->
   <div class="quick-chips">
-    <button class="chip" (click)="sendQuickPrompt('send hi to dheenu in whatsapp')">
-      <i class="fab fa-whatsapp"></i> Send Hi to Dheenu
+    <button class="chip clone-chip" (click)="sendQuickPrompt('Clone Mode: Analyze my technical goals and plan my next sprint')">
+      <i class="fas fa-fingerprint text-green"></i> 🧬 Clone Thinking
     </button>
-    <button class="chip" (click)="sendQuickPrompt('open youtube')">
-      <i class="fab fa-youtube"></i> Open YouTube
+    <button class="chip" (click)="sendQuickPrompt('open youtube and play lofi')">
+      <i class="fab fa-youtube"></i> YouTube Lofi
+    </button>
+    <button class="chip" (click)="sendQuickPrompt('open whatsapp')">
+      <i class="fab fa-whatsapp"></i> WhatsApp
     </button>
     <button class="chip" (click)="sendQuickPrompt('open github')">
-      <i class="fab fa-github"></i> Open GitHub
+      <i class="fab fa-github"></i> GitHub
+    </button>
+    <button class="chip" (click)="sendQuickPrompt('set volume to 80')">
+      <i class="fas fa-volume-high"></i> Volume 80%
     </button>
     <button class="chip" (click)="sendQuickPrompt('purge ram')">
       <i class="fas fa-bolt"></i> Purge RAM
-    </button>
-    <button class="chip" (click)="sendQuickPrompt('fetch details from https://news.ycombinator.com')">
-      <i class="fas fa-globe"></i> Read Live Web
     </button>
   </div>
 
@@ -83,10 +88,9 @@
       class="chat-input" 
       [(ngModel)]="inputText" 
       name="inputText" 
-      placeholder="Ask Abhi or command deities (e.g. 'send hi to dheenu in whatsapp', 'open youtube', 'purge ram')..." 
+      placeholder="Ask JARVIS, command controllers, or query your AI Clone..." 
       autocomplete="off"
     >
     <button type="submit" class="btn-cyber"><i class="fas fa-paper-plane"></i> TRANSMIT</button>
   </form>
 </div>
-

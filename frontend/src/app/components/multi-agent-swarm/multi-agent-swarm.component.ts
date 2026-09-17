@@ -24,6 +24,8 @@ export class MultiAgentSwarmComponent {
 
   getDeityIcon(agentId: string): string {
     switch (agentId.toLowerCase()) {
+      case 'clone':
+        return 'fa-fingerprint';
       case 'abhi':
       case 'supervisor':
         return 'fa-crown';
@@ -40,10 +42,13 @@ export class MultiAgentSwarmComponent {
       case 'automation_agent':
         return 'fa-fire';
       case 'lakshmi':
+      case 'resource_agent':
         return 'fa-heart';
       case 'durga':
+      case 'security_agent':
         return 'fa-shield-halved';
       case 'vishwakarma':
+      case 'architect_agent':
         return 'fa-cubes';
       default:
         return 'fa-user-astronaut';

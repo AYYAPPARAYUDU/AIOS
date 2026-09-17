@@ -68,7 +68,7 @@ export class JarvisApiService {
     return this.http.post<any>(`${this.baseUrl}/api/system/terminal/execute`, { command, shell_type: shellType });
   }
 
-  // 50GB Storage Pool
+  // 200GB Dynamic Knowledge Vault
   getStorageStats(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/api/storage/stats`);
   }
@@ -92,7 +92,7 @@ export class JarvisApiService {
     return this.http.post<{ query: string; count: number; results: SearchResultItem[] }>(`${this.baseUrl}/api/storage/search`, { query });
   }
 
-  // Multi-Agent Swarm
+  // Multi-Agent Swarm & Core Chat
   chatWithAbhi(message: string, targetAgent = 'abhi', conversationId = 'main_session'): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/api/agents/chat`, { message, target_agent: targetAgent, conversation_id: conversationId });
   }
@@ -109,8 +109,20 @@ export class JarvisApiService {
     return this.http.get<{ agents: AgentModel[]; recent_logs: AgentLog[]; llm_health: any }>(`${this.baseUrl}/api/agents/status`);
   }
 
-  // Contacts Directory & Memory
+  // AI Digital Clone Microservice
+  getCloneProfile(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/api/clone/profile`);
+  }
 
+  chatWithClone(message: string, conversationId = 'clone_session'): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/clone/chat`, { message, conversation_id: conversationId });
+  }
+
+  reflectClone(): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/api/clone/reflect`, {});
+  }
+
+  // Contacts Directory & Memory
   listContacts(): Observable<{ contacts: any[] }> {
     return this.http.get<{ contacts: any[] }>(`${this.baseUrl}/api/agents/contacts`);
   }
@@ -132,4 +144,3 @@ export class JarvisApiService {
     return this.http.delete<any>(`${this.baseUrl}/api/agents/session/clear?conversation_id=${encodeURIComponent(conversationId)}`);
   }
 }
-

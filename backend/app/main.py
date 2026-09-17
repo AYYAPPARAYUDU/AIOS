@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from backend.app.config import settings
 from backend.app.core.llm import ollama_client
-from backend.app.routes import api_system, api_agents, api_storage, api_voice, ws_hub
+from backend.app.routes import api_system, api_agents, api_storage, api_voice, api_clone, api_mcp, ws_hub
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
-    description="JARVIS AIOS - Complete Local-First Multi-Agent Laptop Operating System",
+    description="JARVIS AIOS - Complete Local-First Autonomous Cognitive Operating System & AI Clone",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     lifespan=lifespan
@@ -41,7 +41,8 @@ async def health_check():
         "app": settings.APP_NAME,
         "version": settings.VERSION,
         "model": settings.OLLAMA_MODEL,
-        "storage_pool_gb": round(settings.STORAGE_MAX_BYTES / (1024**3), 1)
+        "storage_pool_gb": round(settings.STORAGE_MAX_BYTES / (1024**3), 1),
+        "clone_engine": "active_evolving"
     }
 
 # Include API Routers
@@ -49,6 +50,8 @@ app.include_router(api_system.router)
 app.include_router(api_agents.router)
 app.include_router(api_storage.router)
 app.include_router(api_voice.router)
+app.include_router(api_clone.router)
+app.include_router(api_mcp.router)
 app.include_router(ws_hub.router)
 
 # Serve storage files and screenshots

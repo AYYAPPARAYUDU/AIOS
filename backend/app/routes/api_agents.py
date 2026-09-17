@@ -43,7 +43,8 @@ async def get_agents_status():
 async def chat_with_jarvis(req: ChatRequest):
     result = await agent_orchestrator.process_user_query(
         query=req.message,
-        target_agent=req.target_agent or "supervisor",
+        target_agent=req.target_agent or "abhi",
+        selected_agent=req.target_agent or "abhi",
         conversation_id=req.conversation_id or "main_session"
     )
     return result
@@ -52,7 +53,8 @@ async def chat_with_jarvis(req: ChatRequest):
 async def dispatch_agent(req: DispatchRequest):
     result = await agent_orchestrator.process_user_query(
         query=req.instruction,
-        target_agent=req.agent_id,
+        target_agent=req.agent_id or "abhi",
+        selected_agent=req.agent_id or "abhi",
         conversation_id=req.conversation_id or "main_session"
     )
     return result
@@ -92,7 +94,7 @@ async def delete_contact(name: str):
     success = db.delete_contact(name)
     return {"deleted": success, "contact": name}
 
-# Session Management (Export to 50GB Vault vs Clear)
+# Session Management (Export to Knowledge Vault vs Clear)
 @router.post("/session/export")
 async def export_session(req: SessionActionRequest):
     res = db.export_session_to_vault(req.conversation_id or "main_session")
@@ -102,4 +104,3 @@ async def export_session(req: SessionActionRequest):
 async def clear_session(conversation_id: str = "main_session"):
     success = db.clear_conversation(conversation_id)
     return {"status": "cleared", "conversation_id": conversation_id, "success": success}
-
