@@ -10,5 +10,8 @@ if [ ! -d ".venv" ]; then
     ./.venv/bin/pip install -r requirements.txt
 fi
 
+echo "[*] Pre-warming Ollama LLM into GPU..."
+ollama run qwen3:8b --keepalive 24h "" >/dev/null 2>&1 &
+
 echo "[*] Starting JARVIS AIOS Server..."
 ./.venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000

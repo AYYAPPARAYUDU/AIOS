@@ -11,6 +11,30 @@ class OllamaClient:
         self.base_url = base_url.rstrip("/")
         self.default_model = default_model
 
+    async def warm_up(self) -> bool:
+        """Pre-loads and warms up the LLM model into GPU VRAM with persistent keep_alive."""
+        logger.info(f"Pre-warming Ollama model '{self.default_model}' into GPU VRAM...")
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                # Preload into GPU VRAM with keep_alive = -1 (never unload)
+                payload = {
+                    "model": self.default_model,
+                    "keep_alive": -1,
+                    "options": {
+                        "num_gpu": 99,
+                        "main_gpu": 0
+                    }
+                }
+                res = await client.post(f"{self.base_url}/api/generate", json=payload)
+                if res.status_code == 200:
+                    logger.info(f"Ollama model '{self.default_model}' is successfully locked in GPU VRAM.")
+                    return True
+                else:
+                    logger.warning(f"Ollama warmup returned status {res.status_code}: {res.text}")
+        except Exception as e:
+            logger.warning(f"Ollama GPU pre-warm warning (is Ollama running?): {e}")
+        return False
+
     async def check_health(self) -> dict[str, Any]:
         """Checks if Ollama is running and lists installed models."""
         try:
@@ -45,6 +69,7 @@ class OllamaClient:
             "model": target_model,
             "messages": messages,
             "stream": stream,
+            "keep_alive": -1,          # Lock model in GPU VRAM permanently
             "options": {
                 "num_gpu": 99,        # Full GPU acceleration on NVIDIA CUDA
                 "main_gpu": 0,
@@ -91,6 +116,7 @@ class OllamaClient:
             "model": target_model,
             "messages": messages,
             "stream": True,
+            "keep_alive": -1,          # Lock model in GPU VRAM permanently
             "options": {
                 "num_gpu": 99,
                 "main_gpu": 0,
@@ -123,11 +149,16 @@ class OllamaClient:
             yield f" [LLM Stream Exception: {str(e)}]"
 
     async def get_embedding(self, text: str, model: Optional[str] = None) -> list[float]:
-        """Generates embeddings via Ollama embeddings endpoint."""
+        """Generates embeddings via Ollama embeddings endpoint with GPU acceleration."""
         target_model = model or settings.OLLAMA_EMBED_MODEL
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                res = await client.post(f"{self.base_url}/api/embeddings", json={"model": target_model, "prompt": text})
+                res = await client.post(f"{self.base_url}/api/embeddings", json={
+                    "model": target_model,
+                    "prompt": text,
+                    "keep_alive": -1,
+                    "options": {"num_gpu": 99, "main_gpu": 0}
+                })
                 if res.status_code == 200:
                     return res.json().get("embedding", [])
         except Exception:

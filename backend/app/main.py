@@ -1,17 +1,28 @@
 import os
+import asyncio
 from pathlib import Path
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from backend.app.config import settings
+from backend.app.core.llm import ollama_client
 from backend.app.routes import api_system, api_agents, api_storage, api_voice, ws_hub
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Pre-warm Ollama model onto GPU immediately
+    asyncio.create_task(ollama_client.warm_up())
+    yield
+    # Shutdown
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
     description="JARVIS AIOS - Complete Local-First Multi-Agent Laptop Operating System",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
+    lifespan=lifespan
 )
 
 # CORS configuration

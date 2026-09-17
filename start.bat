@@ -26,14 +26,17 @@ if not exist "frontend\dist\jarvis-aios\browser\index.html" (
     cd ..
 )
 
-:: 3. Verify Ollama
+:: 3. Verify Ollama & Pre-warm GPU Model
 echo [*] Checking Ollama engine connection...
 curl -s http://127.0.0.1:11434/api/tags >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [!] Warning: Ollama is not currently running.
-    echo [*] Attempting to start Ollama in background...
+    echo [!] Starting Ollama service in background...
     start /b ollama serve >nul 2>&1
+    timeout /t 3 /nobreak >nul 2>&1
 )
+
+echo [*] Pre-warming Ollama LLM (qwen3:8b) onto 100%% GPU VRAM...
+start /b ollama run qwen3:8b --keepalive 24h "" >nul 2>&1
 
 :: 4. Launch JARVIS in Browser
 start http://localhost:8000
